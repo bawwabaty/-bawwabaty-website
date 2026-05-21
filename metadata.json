@@ -1,0 +1,8 @@
+{
+  "name": "وكالة بوابتي للسياحة والسفر",
+  "description": "وكالة بوابتي للسفر والخدمات السياحية والعمرة. نقدم أفضل عروض العمرة والسياحة.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
