@@ -1,13 +1,13 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
+import { User, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '../lib/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 interface UserProfile {
   name: string;
   email: string;
   role: 'user' | 'admin';
-  createdAt?: string;
+  createdAt?: any;
 }
 
 interface AuthContextType {
@@ -16,6 +16,8 @@ interface AuthContextType {
   loading: boolean;
   isAdmin: boolean;
   loginWithGoogle: () => Promise<void>;
+  loginWithEmail: (e: string, p: string) => Promise<void>;
+  registerWithEmail: (n: string, e: string, p: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -46,11 +48,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setProfile(userDoc.data() as UserProfile);
           } else {
             // Create user profile
-            const newProfile: UserProfile = {
+            const newProfile: any = {
               name: currentUser.displayName || 'مستخدم',
               email: currentUser.email,
               role,
-              createdAt: new Date().toISOString(),
+              createdAt: serverTimestamp(),
             };
             await setDoc(userDocRef, newProfile);
             setProfile(newProfile);
@@ -69,8 +71,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const loginWithGoogle = async () => {
-    const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+    } catch (error: any) {
+      console.error("Login Error: ", error);
+      if (error.code === 'auth/unauthorized-domain') {
+        throw new Error('يرجى إضافة دومين الموقع في Firebase Authentication (Authorized Domains)');
+      }
+      throw error;
+    }
+  };
+
+  const loginWithEmail = async (email: string, pass: string) => {
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+    } catch (error: any) {
+      console.error("Email Login Error: ", error);
+      throw error;
+    }
+  };
+
+  const registerWithEmail = async (name: string, email: string, pass: string) => {
+    try {
+      const res = await createUserWithEmailAndPassword(auth, email, pass);
+      // Profile will be created automatically in onAuthStateChanged,
+      // but displayName won't be set initially, we can update it in db if we want.
+      const userDocRef = doc(db, 'users', res.user.uid);
+      const role: 'admin' | 'user' = checkIsAdmin(email) ? 'admin' : 'user';
+      const newProfile: any = {
+        name: name || 'مستخدم',
+        email: email,
+        role,
+        createdAt: serverTimestamp(),
+      };
+      await setDoc(userDocRef, newProfile);
+      setProfile(newProfile);
+    } catch (error: any) {
+      console.error("Email Register Error: ", error);
+      throw error;
+    }
   };
 
   const logout = async () => {
@@ -80,7 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isAdmin = profile?.role === 'admin' || checkIsAdmin(user?.email || null);
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, isAdmin, loginWithGoogle, logout }}>
+    <AuthContext.Provider value={{ user, profile, loading, isAdmin, loginWithGoogle, loginWithEmail, registerWithEmail, logout }}>
       {!loading && children}
     </AuthContext.Provider>
   );

@@ -6,8 +6,10 @@ import * as Icons from 'lucide-react';
 import { getWhatsAppUrl } from '../../lib/whatsapp';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 
 export function UmrahPackages() {
+  useDocumentTitle('باقات العمرة');
   const [packages, setPackages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -90,7 +92,8 @@ export function UmrahPackages() {
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent z-10" />
                   <img 
                     src={pkg.image || "https://images.unsplash.com/photo-1565552643982-2d8ba9f2e30f?q=80&w=800&auto=format&fit=crop"} 
-                    alt={pkg.name} 
+                    alt={pkg.name}
+                    loading="lazy"
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
                   />
                   

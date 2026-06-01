@@ -28,10 +28,7 @@ export function Navbar() {
           {/* Logo */}
           <div className="flex-shrink-0 flex items-center">
             <Link to="/" className="flex items-center gap-2">
-              <span className="text-3xl md:text-4xl font-black text-primary tracking-tight flex items-center">
-                بوابت<span className="text-secondary">ي</span>
-                <Plane className="w-7 h-7 md:w-8 md:h-8 text-secondary ml-1 transform rotate-45" />
-              </span>
+              <img src="https://res.cloudinary.com/dl7hgexkl/image/upload/v1780314494/LOGO_BAWWABATY_vswaog.svg" alt="بوابتي" className="h-16 md:h-20" />
             </Link>
           </div>
 
@@ -61,7 +58,7 @@ export function Navbar() {
                       لوحة التحكم
                     </Link>
                   )}
-                  <button onClick={logout} className="p-3 bg-slate-50 rounded-full text-slate-500 hover:text-red-500 hover:bg-red-50 transition-colors" title="تسجيل خروج">
+                  <button onClick={logout} aria-label="تسجيل خروج" className="p-3 bg-slate-50 rounded-full text-slate-500 hover:text-red-500 hover:bg-red-50 transition-colors" title="تسجيل خروج">
                     <LogOut className="w-6 h-6" />
                   </button>
                 </div>
@@ -81,6 +78,7 @@ export function Navbar() {
           <div className="flex items-center md:hidden">
             <button
               onClick={() => setIsOpen(!isOpen)}
+              aria-label="القائمة"
               className="text-slate-600 hover:text-primary focus:outline-none p-2"
             >
               {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}

@@ -16,17 +16,18 @@ export function AdminDashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [packagesSnap, hotelsSnap, usersSnap] = await Promise.all([
+        const [packagesSnap, hotelsSnap, usersSnap, servicesSnap] = await Promise.all([
           getDocs(query(collection(db, 'packages'))),
           getDocs(query(collection(db, 'hotels'))),
-          getDocs(query(collection(db, 'users')))
+          getDocs(query(collection(db, 'users'))),
+          getDocs(query(collection(db, 'services')))
         ]);
 
         setStats({
           packages: packagesSnap.size,
           hotels: hotelsSnap.size,
           users: usersSnap.size,
-          services: 0 // Stub
+          services: servicesSnap.size
         });
       } catch (error) {
         console.error("Error fetching stats:", error);

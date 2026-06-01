@@ -1,11 +1,80 @@
-import { useState } from 'react';
-import { Building2, Plus } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Building2, Plus, Edit2, Trash2, X, Save } from 'lucide-react';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
+import toast from 'react-hot-toast';
+
+interface Hotel {
+  id: string;
+  name: string;
+  location: string;
+  rating: number;
+}
 
 export function AdminHotels() {
-  const [hotels] = useState([
-    { id: '1', name: 'فندق ساعة مكة فيرمونت', city: 'مكة المكرمة', stars: 5 },
-    { id: '2', name: 'فندق بولمان زمزم المدينة', city: 'المدينة المنورة', stars: 5 },
-  ]);
+  const [hotels, setHotels] = useState<Hotel[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const defaultFormData = { name: '', location: '', rating: 5 };
+  const [formData, setFormData] = useState(defaultFormData);
+
+  const fetchHotels = async () => {
+    try {
+      const q = query(collection(db, 'hotels'), orderBy('createdAt', 'desc'));
+      const snapshot = await getDocs(q);
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Hotel[];
+      setHotels(data);
+    } catch (error) {
+      toast.error('حدث خطأ أثناء جلب الفنادق');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchHotels();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const savePromise = async () => {
+      if (editingId) {
+        await updateDoc(doc(db, 'hotels', editingId), { ...formData });
+      } else {
+        await addDoc(collection(db, 'hotels'), { ...formData, createdAt: serverTimestamp() });
+      }
+      fetchHotels();
+      setIsModalOpen(false);
+      setFormData(defaultFormData);
+      setEditingId(null);
+    };
+
+    toast.promise(savePromise(), {
+      loading: 'جاري الحفظ...',
+      success: 'تم الحفظ بنجاح',
+      error: 'حدث خطأ أثناء الحفظ'
+    });
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('هل أنت متأكد من حذف هذا الفندق؟')) return;
+    try {
+      await deleteDoc(doc(db, 'hotels', id));
+      toast.success('تم الحذف بنجاح');
+      fetchHotels();
+    } catch (error) {
+      toast.error('حدث خطأ أثناء الحذف');
+    }
+  };
+
+  const openEditModal = (hotel: Hotel) => {
+    setFormData({ name: hotel.name || '', location: hotel.location || '', rating: hotel.rating || 5 });
+    setEditingId(hotel.id);
+    setIsModalOpen(true);
+  };
 
   return (
     <div className="space-y-6">
@@ -14,41 +83,96 @@ export function AdminHotels() {
           <h2 className="text-2xl font-bold text-slate-800">إدارة الفنادق</h2>
           <p className="text-slate-500">إدارة الفنادق المعروضة في الباقات</p>
         </div>
-        <button className="bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-xl font-medium transition-colors flex items-center gap-2">
+        <button 
+          onClick={() => { setFormData(defaultFormData); setEditingId(null); setIsModalOpen(true); }}
+          className="bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-xl font-medium transition-colors flex items-center gap-2"
+        >
           <Plus className="w-5 h-5" />
           إضافة فندق
         </button>
       </div>
 
       <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100">
-        <table className="w-full text-right">
-          <thead className="bg-slate-50 border-b border-slate-100">
-            <tr>
-              <th className="px-6 py-4 font-bold text-slate-700">الاسم</th>
-              <th className="px-6 py-4 font-bold text-slate-700">المدينة</th>
-              <th className="px-6 py-4 font-bold text-slate-700">التقييم</th>
-              <th className="px-6 py-4 font-bold text-slate-700">الإجراءات</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {hotels.map((hotel) => (
-              <tr key={hotel.id} className="hover:bg-slate-50 transition-colors">
-                <td className="px-6 py-4 font-medium flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Building2 className="w-5 h-5 text-primary" />
-                  </div>
-                  {hotel.name}
-                </td>
-                <td className="px-6 py-4 text-slate-600">{hotel.city}</td>
-                <td className="px-6 py-4 text-secondary font-bold">{hotel.stars} نجوم</td>
-                <td className="px-6 py-4">
-                  <button className="text-primary hover:text-primary-dark font-medium px-3 py-1 bg-primary/10 rounded-lg">تعديل</button>
-                </td>
+        <div className="overflow-x-auto w-full">
+          <table className="w-full text-right min-w-[600px]">
+            <thead className="bg-slate-50 border-b border-slate-100">
+              <tr>
+                <th className="px-6 py-4 font-bold text-slate-700">الاسم</th>
+                <th className="px-6 py-4 font-bold text-slate-700">المدينة / الموقع</th>
+                <th className="px-6 py-4 font-bold text-slate-700">التقييم</th>
+                <th className="px-6 py-4 font-bold text-slate-700">الإجراءات</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {loading ? (
+                <tr>
+                  <td colSpan={4} className="px-6 py-8 text-center text-slate-500">جاري التحميل...</td>
+                </tr>
+              ) : hotels.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-6 py-8 text-center text-slate-500">لا توجد فنادق مضافة حتى الآن</td>
+                </tr>
+              ) : hotels.map((hotel) => (
+                <tr key={hotel.id} className="hover:bg-slate-50 transition-colors">
+                  <td className="px-6 py-4 font-medium flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <Building2 className="w-5 h-5 text-primary" />
+                    </div>
+                    {hotel.name}
+                  </td>
+                  <td className="px-6 py-4 text-slate-600">{hotel.location}</td>
+                  <td className="px-6 py-4 text-secondary font-bold">{hotel.rating} نجوم</td>
+                  <td className="px-6 py-4">
+                    <div className="flex gap-2">
+                       <button onClick={() => openEditModal(hotel)} className="text-primary hover:text-primary-dark font-medium px-3 py-1 bg-primary/10 rounded-lg transition-colors flex items-center gap-1"><Edit2 className="w-4 h-4"/> تعديل</button>
+                       <button onClick={() => handleDelete(hotel.id)} className="text-red-600 hover:text-red-700 font-medium px-3 py-1 bg-red-50 rounded-lg transition-colors flex items-center gap-1"><Trash2 className="w-4 h-4"/> حذف</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md flex flex-col">
+            <div className="flex justify-between items-center p-6 border-b border-slate-100">
+              <h3 className="text-xl font-bold">{editingId ? 'تعديل الفندق' : 'إضافة فندق جديد'}</h3>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6">
+              <form id="hotel-form" onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">اسم الفندق</label>
+                  <input type="text" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full rounded-lg border-slate-300 border p-3 focus:ring-primary focus:border-primary" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">الموقع / المدينة</label>
+                  <input type="text" required value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} className="w-full rounded-lg border-slate-300 border p-3 focus:ring-primary focus:border-primary" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">التقييم (النجوم)</label>
+                  <select required value={formData.rating} onChange={e => setFormData({...formData, rating: Number(e.target.value)})} className="w-full rounded-lg border-slate-300 border p-3 focus:ring-primary focus:border-primary">
+                    <option value={1}>1 نجمة</option>
+                    <option value={2}>2 نجمة</option>
+                    <option value={3}>3 نجوم</option>
+                    <option value={4}>4 نجوم</option>
+                    <option value={5}>5 نجوم</option>
+                  </select>
+                </div>
+              </form>
+            </div>
+            <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 rounded-b-2xl">
+              <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-2.5 rounded-xl font-medium text-slate-600 hover:bg-slate-200 transition-colors">إلغاء</button>
+              <button type="submit" form="hotel-form" className="px-6 py-2.5 rounded-xl font-medium text-white bg-primary hover:bg-primary-dark transition-colors flex items-center gap-2"><Save className="w-5 h-5" /> حفظ</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

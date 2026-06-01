@@ -1,18 +1,63 @@
 import { motion } from 'framer-motion';
-import { Plane, Star, ShieldCheck, Clock, MapPin, Building, ArrowLeft, Ticket, Users, FileText, Bus, CheckCircle2, Headset, ThumbsUp, CreditCard, BookOpen } from 'lucide-react';
+import { Plane, Star, ShieldCheck, Clock, MapPin, Building, Building2, Map as MapIcon, ArrowLeft, Ticket, Users, FileText, Bus, CheckCircle2, Headset, ThumbsUp, CreditCard, BookOpen, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { FloatingWhatsApp } from '../../components/FloatingWhatsApp';
 import { getWhatsAppUrl } from '../../lib/whatsapp';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
 };
 
+const servicesList = [
+  {
+    id: 1,
+    title: 'تذاكر الطيران',
+    description: 'نقوم بحجز رحلاتنا حصرياً مع شركات طيران موثوقة لضمان راحتكم وجودة الخدمة خلال رحلتكم للعمرة.',
+    icon: Plane,
+    color: 'bg-primary/5',
+    iconColor: 'text-primary'
+  },
+  {
+    id: 2,
+    title: 'الفنادق',
+    description: 'تشمل باقات العمرة لدينا فنادق ذات جودة عالية تقع على مسافة قريبة سيراً على الأقدام، وتتوفر في فئات مختلفة من الأسعار والراحة.',
+    icon: Building2,
+    color: 'bg-secondary/5',
+    iconColor: 'text-secondary'
+  },
+  {
+    id: 3,
+    title: 'تأشيرة العمرة',
+    description: 'بفضل خبرتنا الواسعة ونهجنا المهني، يمكننا تقديم المشورة الشخصية لكم ونتولى إجراءات طلب تأشيرة العمرة بالكامل.',
+    icon: FileText,
+    color: 'bg-slate-100',
+    iconColor: 'text-slate-700'
+  },
+  {
+    id: 4,
+    title: 'المرافقة',
+    description: 'يمتلك مرافقونا في رحلات العمرة المعرفة اللازمة لمساعدتكم بشكل جيد أثناء رحلتكم. كما أنهم يتحدثون عدة لغات مثل: العربية، الهولندية، الإنجليزية، والأمازيغية.',
+    icon: Users,
+    color: 'bg-primary/5',
+    iconColor: 'text-primary'
+  },
+  {
+    id: 5,
+    title: 'الجولات السياحية',
+    description: 'بالإضافة إلى العمرة، استمتعوا بجولات رائعة إلى أهم المواقع (الإسلامية)، سواء مع مرافقة أو بدونها.',
+    icon: MapIcon,
+    color: 'bg-secondary/5',
+    iconColor: 'text-secondary'
+  }
+];
+
 export function Home() {
+  useDocumentTitle('الرئيسية');
   const [featuredPackages, setFeaturedPackages] = useState<any[]>([]);
 
   useEffect(() => {
@@ -43,6 +88,20 @@ export function Home() {
       }
     };
     fetchFeatured();
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const el = document.getElementById('partners-slider');
+      if (el) {
+        if (el.scrollLeft >= el.scrollWidth - el.clientWidth - 10) {
+          el.scrollTo({ left: 0, behavior: 'smooth' });
+        } else {
+          el.scrollBy({ left: 180, behavior: 'smooth' });
+        }
+      }
+    }, 2500);
+    return () => clearInterval(interval);
   }, []);
 
   const getMinPrice = (pkg: any) => {
@@ -95,7 +154,7 @@ export function Home() {
               transition={{ delay: 0.4, duration: 0.6 }}
               className="text-4xl md:text-6xl lg:text-7xl font-black mb-6 md:mb-8 leading-[1.3] md:leading-[1.2] drop-shadow-2xl"
             >
-               رحلتك الإيمانية تبدأ <span className="text-secondary">هنا</span>
+               بوابتك نحو العالم، رحلتك الإيمانية تبدأ هنا
             </motion.h1>
             <motion.p 
               initial={{ opacity: 0, y: 20 }}
@@ -130,83 +189,46 @@ export function Home() {
         </div>
       </section>
 
+
+
       {/* Services Section */}
-      <section className="py-20 lg:py-28 bg-white relative z-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
+      <section className="py-20 lg:py-28 bg-white overflow-hidden relative">
+        <div className="container mx-auto px-4 max-w-7xl">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            transition={{ duration: 0.5 }}
+            className="text-center mb-16 md:mb-24"
           >
-            <h2 className="text-4xl md:text-5xl font-black mb-6">
-              <span className="text-primary">بوابتك</span> <span className="text-secondary">نحو العالم</span>
-            </h2>
-            <p className="text-slate-500 text-lg md:text-xl font-medium max-w-3xl mx-auto leading-relaxed">نقدم باقة متكاملة من خدمات السفر والعمرة لتجربة لا تُنسى تلبي كافة احتياجاتكم</p>
+            <h2 className="text-4xl md:text-5xl font-black text-primary tracking-tight">خدماتنا</h2>
           </motion.div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-8">
-            {/* Travel Services Card */}
-            <motion.div 
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ duration: 0.6 }}
-              className="bg-slate-50 rounded-3xl p-6 md:p-8 hover:shadow-xl transition-all duration-500 border border-slate-100 group flex flex-col"
-            >
-              <div className="flex flex-col xl:flex-row items-center justify-between gap-4 mb-6 border-b border-slate-200 pb-6 text-center xl:text-right">
-                <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-500 shrink-0">
-                  <Plane className="w-7 h-7 text-primary" />
-                </div>
-                <h3 className="text-2xl lg:text-3xl font-black text-primary w-full">خدمات السفر</h3>
-              </div>
-              <ul className="space-y-4 flex-1">
-                {[
-                  { text: 'استخراج التأشيرات السياحية والعمل', icon: Ticket },
-                  { text: 'حجز تذاكر الطيران على جميع الخطوط', icon: Plane },
-                  { text: 'حجز الفنادق والإقامة مع خيارات متنوعة', icon: Building },
-                  { text: 'تنظيم رحلات العمل والرحلات العائلية', icon: Users }
-                ].map((item, idx) => (
-                  <li key={idx} className="flex items-center gap-3 text-slate-700 text-base md:text-lg font-bold">
-                    <div className="w-8 h-8 bg-white shadow-sm rounded-lg flex items-center justify-center shrink-0">
-                      <item.icon className="w-4 h-4 text-slate-400" />
-                    </div>
-                    <span>{item.text}</span>
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
+          {/* Wavy Background Path & Services Grid */}
+          <div className="relative">
+            <div className="absolute top-1/2 left-0 w-full -translate-y-1/2 hidden lg:block opacity-30 pointer-events-none" style={{ height: '300px', marginTop: '-30px' }}>
+              <svg width="100%" height="100%" viewBox="0 0 1200 300" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+                <path d="M 1200 120 Q 1050 200 900 150 T 600 180 T 300 130 T 0 180" stroke="#94A3B8" strokeWidth="2" strokeDasharray="6 6" fill="none" />
+                <circle cx="1180" cy="125" r="6" fill="#E2E8F0" />
+                <circle cx="20" cy="180" r="6" fill="#E2E8F0" />
+              </svg>
+            </div>
 
-            {/* Umrah Services Card */}
-            <motion.div 
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="bg-orange-50/50 rounded-3xl p-6 md:p-8 hover:shadow-xl transition-all duration-500 border border-orange-100/50 group flex flex-col"
-            >
-              <div className="flex flex-col xl:flex-row items-center justify-between gap-4 mb-6 border-b border-orange-200/50 pb-6 text-center xl:text-right">
-                <div className="w-14 h-14 bg-secondary/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-500 shrink-0">
-                  <BookOpen className="w-7 h-7 text-secondary" />
-                </div>
-                <h3 className="text-2xl lg:text-3xl font-black text-secondary w-full">خدمات العمرة</h3>
-              </div>
-              <ul className="space-y-4 flex-1">
-                 {[
-                  { text: 'إقامات متنوعة في مكة والمدينة بالقرب من الحرم', icon: Building },
-                  { text: 'وسائل نقل حديثة ومريحة', icon: Bus },
-                  { text: 'باقات متكاملة تشمل التذاكر والتأشيرات', icon: FileText },
-                  { text: 'مزارات تاريخية ودينية مع مرشدين معتمدين', icon: MapPin }
-                ].map((item, idx) => (
-                  <li key={idx} className="flex items-center gap-3 text-slate-700 text-base md:text-lg font-bold">
-                    <div className="w-8 h-8 bg-white shadow-sm rounded-lg flex items-center justify-center shrink-0">
-                      <item.icon className="w-4 h-4 text-slate-400" />
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-8 lg:gap-4 relative z-10">
+              {servicesList.map((service, index) => {
+                const Icon = service.icon;
+                return (
+                  <motion.div key={service.id} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.6, delay: index * 0.1 }} className="flex flex-col items-center text-center group">
+                    <div className={`w-28 h-28 rounded-3xl ${service.color} ${service.iconColor} flex items-center justify-center mb-6 shadow-sm border border-slate-100 relative transition-transform duration-500 group-hover:-translate-y-2`} style={{ borderRadius: '50% 40% 60% 40% / 40% 50% 40% 60%' }}>
+                      <Icon className="w-12 h-12 relative z-10" strokeWidth={1.5} />
+                      <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-slate-200"></div>
                     </div>
-                    <span>{item.text}</span>
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
+                    <h3 className="text-xl font-bold text-slate-800 mb-3">{service.title}</h3>
+                    <p className="text-sm font-medium text-slate-500 leading-relaxed max-w-[200px] md:max-w-none">{service.description}</p>
+                  </motion.div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </section>
@@ -220,7 +242,7 @@ export function Home() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl md:text-5xl font-black text-primary mb-6 leading-tight">باقات العمرة المميزة</h2>
+            <h2 className="text-4xl md:text-5xl font-black text-primary tracking-tight mb-6 leading-tight">باقات <span className="text-secondary">العمرة المميزة</span></h2>
             <p className="text-slate-600 text-lg md:text-xl font-medium max-w-3xl mx-auto leading-relaxed">اختر من بين باقاتنا المتنوعة التي صُممت بعناية لتناسب جميع احتياجاتكم الدينية والسياحية.</p>
           </motion.div>
 
@@ -234,9 +256,9 @@ export function Home() {
                  transition={{ delay: item * 0.1, duration: 0.5 }}
                  className="bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 border border-slate-100 group flex flex-col"
                >
-                 <Link to={`/package/${pkg.id}`} className="block relative aspect-[4/3] overflow-hidden">
+                 <Link to={`/package/${pkg.id}`} className="block relative aspect-[210/297] overflow-hidden">
                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent z-10 transition-opacity group-hover:opacity-80" />
-                   <img src={pkg.image || 'https://images.unsplash.com/photo-1591806336026-f825d72071a2?q=80&w=800&auto=format&fit=crop'} alt={pkg.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                   <img src={pkg.image || 'https://images.unsplash.com/photo-1591806336026-f825d72071a2?q=80&w=800&auto=format&fit=crop'} loading="lazy" alt={pkg.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                    
                    {pkg.featured && (
                      <div className="absolute top-4 right-4 z-20 bg-secondary/95 backdrop-blur px-4 py-2 rounded-full text-white font-bold text-sm shadow-md">
@@ -259,13 +281,13 @@ export function Home() {
                        <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
                          <Building className="w-5 h-5 text-primary" />
                        </div>
-                       {pkg.programs?.length || 1} برامج فندقية
+                       {pkg.programs?.length || 1} برنامج
                      </li>
                      <li className="flex items-center gap-3 text-slate-700 font-bold text-base">
                        <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
                          <Plane className="w-5 h-5 text-primary" />
                        </div>
-                       طيران وتأشيرة
+                       طيران عبر {pkg.airline || 'عدة خطوط'}
                      </li>
                    </ul>
                    <div className="flex items-center gap-3">
@@ -300,84 +322,71 @@ export function Home() {
         </div>
       </section>
 
-      {/* About Us Section */}
-      <section className="py-20 lg:py-28 bg-white overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-20 items-center">
-            {/* Images Side */}
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="relative order-2 lg:order-1 h-[350px] sm:h-[450px] md:h-[550px]"
-            >
-              <div className="absolute top-0 right-0 w-[65%] h-[70%]">
-                <img 
-                  src="https://images.unsplash.com/photo-1542051812871-757500d5a371?q=80&w=1200&auto=format&fit=crop" 
-                  alt="Madinah" 
-                  className="w-full h-full object-cover rounded-3xl shadow-xl"
-                />
-              </div>
-              <div className="absolute bottom-0 left-0 w-[65%] h-[60%] z-20">
-                <img 
-                  src="https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=1200&auto=format&fit=crop" 
-                  alt="Travel plane" 
-                  className="w-full h-full object-cover rounded-3xl shadow-xl border-4 md:border-8 border-white"
-                />
-              </div>
-              {/* 15+ Years Badge */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 bg-white w-28 h-28 sm:w-36 sm:h-36 md:w-40 md:h-40 rounded-full shadow-2xl flex flex-col items-center justify-center border-4 md:border-8 border-orange-50">
-                <span className="text-3xl sm:text-4xl md:text-5xl font-black text-secondary">١٥+</span>
-                <span className="text-xs sm:text-sm md:text-base font-bold text-slate-600 mt-0.5 md:mt-1">عاماً من</span>
-                <span className="text-xs sm:text-sm md:text-base font-bold text-slate-600">الخبرة</span>
-              </div>
-            </motion.div>
 
-            {/* Content Side */}
-            <motion.div 
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="order-1 lg:order-2 space-y-8"
-            >
-              <div>
-                <h2 className="text-4xl md:text-5xl font-black mb-4 text-primary leading-tight">من نحن؟</h2>
-                <h3 className="text-3xl md:text-4xl font-black text-secondary leading-tight">بوابتك للعالم</h3>
-              </div>
-              <p className="text-lg md:text-xl text-slate-600 leading-relaxed font-medium">
-                تأسست وكالة بوابتي للسياحة والسفر لتكون رائدة في مجال تقديم الخدمات السياحية المتكاملة. نهدف إلى توفير أسهل الطرق وأفضل العروض لعملائنا لاكتشاف العالم وصناعة ذكريات لا تُنسى.
-              </p>
-              
-              <ul className="space-y-4">
-                {[
-                  "مصداقية عالية وشفافية في التعامل",
-                  "فريق عمل متخصص ذو خبرة واسعة",
-                  "عروض حصرية وخصومات مستمرة",
-                  "تنوع في الباقات لتناسب جميع الأذواق"
-                ].map((item, idx) => (
-                  <motion.li 
-                    key={idx} 
-                    initial={{ opacity: 0, x: -10 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: idx * 0.1 }}
-                    className="flex items-center gap-4 text-lg md:text-xl text-slate-700 font-bold"
-                  >
-                    <CheckCircle2 className="w-6 h-6 text-secondary shrink-0" />
-                    <span>{item}</span>
-                  </motion.li>
-                ))}
-              </ul>
 
-              <Link 
-                to="/about"
-                className="inline-flex items-center gap-3 bg-primary hover:bg-primary-dark text-white px-8 py-4 text-lg rounded-xl font-bold transition-all shadow-lg hover:shadow-xl hover:-translate-y-1 mt-6"
-              >
-                اقرأ المزيد عنا
-              </Link>
-            </motion.div>
+      {/* Airlines Partners Section */}
+      <section className="py-16 bg-white overflow-hidden relative" dir="ltr">
+        <div className="container mx-auto px-4 max-w-7xl">
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-10"
+            dir="rtl"
+          >
+            <h3 className="text-3xl md:text-4xl font-black text-primary mb-4 tracking-tight">شركاء <span className="text-secondary">النجاح</span></h3>
+            <p className="text-slate-500 text-lg font-medium max-w-2xl mx-auto">نعتز بشراكتنا مع أفضل خطوط الطيران العالمية</p>
+          </motion.div>
+          
+          <div className="flex items-center justify-center gap-2 md:gap-6 relative group">
+            {/* Nav Left */}
+            <button 
+              onClick={() => {
+                const el = document.getElementById('partners-slider');
+                if (el) el.scrollBy({ left: -160, behavior: 'smooth' });
+              }}
+              className="p-2 md:p-3 rounded-full bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-primary transition-all flex-shrink-0 z-10 shadow-sm opacity-100 md:opacity-0 group-hover:opacity-100"
+              aria-label="Previous partners"
+            >
+              <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
+            </button>
+            
+            {/* Slider Container */}
+            <div 
+              id="partners-slider"
+              className="flex gap-10 md:gap-14 items-center overflow-x-auto snap-x snap-mandatory hide-scrollbar py-4 px-2 w-full max-w-5xl"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+              <style dangerouslySetInnerHTML={{__html: `
+                .hide-scrollbar::-webkit-scrollbar { display: none; }
+              `}} />
+              {[
+                { name: 'الخطوط السعودية', logo: 'https://res.cloudinary.com/dl7hgexkl/image/upload/v1780315423/saudia_LOGO_cfemva.svg' },
+                { name: 'الخطوط الملكية المغربية', logo: 'https://res.cloudinary.com/dl7hgexkl/image/upload/v1780315422/Logo_Royal_Air_Maroc_khdu4h.svg' },
+                { name: 'الإتحاد للطيران', logo: 'https://res.cloudinary.com/dl7hgexkl/image/upload/v1780315422/etihad-airways-1_u5ovxt.svg', small: true },
+                { name: 'الخطوط الجوية القطرية', logo: 'https://res.cloudinary.com/dl7hgexkl/image/upload/v1780313927/Qatar_Airways-Logo.wine_bsqktc.svg', large: true },
+                { name: 'طيران ناس', logo: 'https://res.cloudinary.com/dl7hgexkl/image/upload/v1780315422/LOGO_FLYNAS_dmxq9p.svg', small: true },
+                { name: 'الخطوط الجوية التركية', logo: 'https://res.cloudinary.com/dl7hgexkl/image/upload/v1780315656/Colorful_double-line_horizontal_Turkish_Airlines_logo_w3s08i.svg', large: true },
+                { name: 'مصر للطيران', logo: 'https://res.cloudinary.com/dl7hgexkl/image/upload/v1780315476/mada_social_media_4-2.5_m.pdf_izobjv.svg' },
+                { name: 'الخطوط الجوية الفرنسية', logo: 'https://logo.clearbit.com/airfrance.com' }
+              ].map((airline, idx) => (
+                <div key={idx} className={`snap-center flex-shrink-0 ${airline.large ? 'w-36 md:w-48 h-12 md:h-16' : airline.small ? 'w-24 md:w-28 h-8 md:h-10' : 'w-28 md:w-36 h-10 md:h-14'} flex items-center justify-center opacity-60 hover:opacity-100 transition-opacity duration-300`}>
+                  <img src={airline.logo} alt={airline.name} title={airline.name} loading="lazy" className="max-w-full max-h-full object-contain drop-shadow-sm" />
+                </div>
+              ))}
+            </div>
+            
+            {/* Nav Right */}
+            <button 
+              onClick={() => {
+                const el = document.getElementById('partners-slider');
+                if (el) el.scrollBy({ left: 160, behavior: 'smooth' });
+              }}
+              className="p-2 md:p-3 rounded-full bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-primary transition-all flex-shrink-0 z-10 shadow-sm opacity-100 md:opacity-0 group-hover:opacity-100"
+              aria-label="Next partners"
+            >
+              <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
+            </button>
           </div>
         </div>
       </section>
@@ -392,7 +401,7 @@ export function Home() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl md:text-5xl font-black mb-6 leading-tight">
+            <h2 className="text-4xl md:text-5xl font-black mb-6 leading-tight tracking-tight text-white">
               لماذا تختار <span className="text-secondary">بوابتي؟</span>
             </h2>
             <p className="text-blue-100 text-lg md:text-xl font-medium max-w-3xl mx-auto">نحرص دائماً على تقديم أفضل تجربة لعملائنا من خلال الخدمات المميزة التي تلبي تطلعاتكم</p>

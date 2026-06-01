@@ -8,9 +8,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           <div className="col-span-1 md:col-span-1">
              <div className="flex items-center gap-2 mb-6">
-              <span className="text-5xl font-black text-white tracking-tight">
-                بوابت<span className="text-secondary">ي</span>
-              </span>
+               <img src="https://res.cloudinary.com/dl7hgexkl/image/upload/v1780314494/LOGO_BAWWABATY_vswaog.svg" alt="بوابتي" className="h-20 md:h-28 brightness-0 invert" />
             </div>
             <p className="text-base md:text-lg text-slate-400 mb-8 leading-relaxed">
               وكالتك الموثوقة لخدمات السياحة والسفر والعمرة. نقدم أفضل الباقات والخدمات المتكاملة لتجربة سفر لا تُنسى.

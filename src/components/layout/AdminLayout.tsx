@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { LayoutDashboard, Package, Building2, Briefcase, Users, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Package, Building2, Briefcase, Users as UsersIcon, LogOut, Menu, X, Settings } from 'lucide-react';
 import { useState } from 'react';
 
 export function AdminLayout() {
@@ -15,27 +15,32 @@ export function AdminLayout() {
   }
 
   const menuItems = [
-    { icon: LayoutDashboard, label: 'لوحة القيادة', path: '/admin' },
+    { icon: LayoutDashboard, label: 'لوحة القيادة', path: '/admin', exact: true },
     { icon: Package, label: 'إدارة الباقات', path: '/admin/packages' },
     { icon: Building2, label: 'إدارة الفنادق', path: '/admin/hotels' },
     { icon: Briefcase, label: 'إدارة الخدمات', path: '/admin/services' },
-    { icon: Users, label: 'إدارة المستخدمين', path: '/admin/users' },
+    { icon: UsersIcon, label: 'إدارة المستخدمين', path: '/admin/users' },
+    { icon: Settings, label: 'إعدادات الحساب', path: '/admin/account' },
   ];
 
-  const isActive = (path: string) => {
-    if (path === '/admin' && location.pathname !== '/admin') return false;
-    return location.pathname.startsWith(path);
+  const isActive = (path: string, exact?: boolean) => {
+    if (exact && location.pathname !== path) return false;
+    if (!exact && location.pathname === '/admin') return false; // Avoid matching all for non exact
+    if (!exact) return location.pathname.startsWith(path);
+    return location.pathname === path;
   };
 
   const SidebarContent = () => (
     <>
       <div className="h-20 flex items-center justify-between px-6 border-b border-slate-800">
-        <Link to="/" className="text-2xl font-black text-white text-right block w-full">
-          بوابت<span className="text-secondary">ي</span> <span className="text-xs font-normal text-slate-400 block mt-1">لوحة الإدارة</span>
+        <Link to="/" className="block w-full">
+          <img src="https://res.cloudinary.com/dl7hgexkl/image/upload/v1780314494/LOGO_BAWWABATY_vswaog.svg" alt="بوابتي" className="h-10 mx-auto" />
+          <span className="text-xs font-normal text-slate-400 block text-center mt-2">لوحة الإدارة</span>
         </Link>
         <button 
           className="lg:hidden text-slate-300 hover:text-white"
           onClick={() => setIsMobileMenuOpen(false)}
+          aria-label="إغلاق القائمة"
         >
           <X className="w-6 h-6" />
         </button>
@@ -48,7 +53,7 @@ export function AdminLayout() {
             to={item.path}
             onClick={() => setIsMobileMenuOpen(false)}
             className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-              isActive(item.path)
+              isActive(item.path, item.exact)
                 ? 'bg-primary text-white'
                 : 'hover:bg-slate-800 hover:text-white text-slate-300'
             }`}
@@ -93,6 +98,7 @@ export function AdminLayout() {
             <button 
               className="lg:hidden text-slate-600 hover:text-primary transition-colors p-2"
               onClick={() => setIsMobileMenuOpen(true)}
+              aria-label="فتح القائمة"
             >
               <Menu className="w-6 h-6" />
             </button>
@@ -103,7 +109,7 @@ export function AdminLayout() {
           <div className="flex items-center gap-4">
              <div className="text-sm text-slate-600 font-medium hidden sm:block">مرحباً، {user.displayName}</div>
              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold overflow-hidden shrink-0">
-               {user.photoURL ? <img src={user.photoURL} alt="Avatar" className="w-full h-full object-cover" /> : user.displayName?.charAt(0) || 'م'}
+               {user.photoURL ? <img src={user.photoURL} alt="Avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" /> : user.displayName?.charAt(0) || 'م'}
              </div>
           </div>
         </header>

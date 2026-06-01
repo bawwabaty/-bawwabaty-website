@@ -6,12 +6,15 @@ import * as Icons from 'lucide-react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { getWhatsAppUrl } from '../../lib/whatsapp';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 
 export function PackageDetails() {
   const { id } = useParams();
   const [pkg, setPkg] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState<string>('');
+
+  useDocumentTitle(pkg ? pkg.name : 'تفاصيل الباقة');
 
   useEffect(() => {
     const fetchPackage = async () => {
@@ -107,7 +110,7 @@ export function PackageDetails() {
                   currentDisplayImage === img ? 'ring-2 ring-primary ring-offset-2 ring-offset-slate-50 opacity-100 scale-105' : 'opacity-60 hover:opacity-100'
                 }`}
               >
-                <img src={img} alt={`Thumbnail ${idx}`} className="w-full h-full object-cover" />
+                <img src={img} alt={`Thumbnail ${idx}`} loading="lazy" className="w-full h-full object-cover" />
               </button>
             ))}
           </div>
@@ -151,18 +154,18 @@ export function PackageDetails() {
             {pkg.features && pkg.features.length > 0 && (
               <section>
                 <h2 className="text-2xl font-black text-slate-800 mb-6">ما تتضمنه الباقة</h2>
-                <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
+                <div className="flex flex-wrap items-center gap-3 md:gap-4">
                   {pkg.features.map((feature: any, idx: number) => {
                     const IconComp = (Icons as any)[feature.icon] || CheckCircle2;
                     return (
                     <div 
                       key={idx}
-                      className="bg-white border border-slate-200 p-3 rounded-xl flex flex-col items-center justify-center text-center gap-2 hover:border-primary/40 transition-colors shadow-sm"
+                      className="bg-white border border-slate-200 px-4 py-3 rounded-full flex flex-row items-center gap-3 hover:border-primary/40 transition-colors shadow-sm"
                     >
-                      <div className="w-8 h-8 bg-slate-50 rounded-full flex items-center justify-center">
+                      <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
                         <IconComp className="w-4 h-4 text-primary" />
                       </div>
-                      <span className="text-xs font-bold text-slate-700">{feature.text || feature}</span>
+                      <span className="text-sm md:text-base font-bold text-slate-700">{feature.text || feature}</span>
                     </div>
                   )})}
                 </div>
