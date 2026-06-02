@@ -1,12 +1,28 @@
-import { Outlet, Link, useLocation, Navigate } from 'react-router-dom';
+import { Outlet, Link, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { LayoutDashboard, Package, Building2, Briefcase, Users as UsersIcon, LogOut, Menu, X, Settings } from 'lucide-react';
-import { useState } from 'react';
+import { LayoutDashboard, Package, Building2, Briefcase, Users as UsersIcon, Settings, Plane, CreditCard, Receipt, Wallet, LogOut, Menu, X, Search, Command, Calculator } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 export function AdminLayout() {
   const { user, isAdmin, loading, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showPalette, setShowPalette] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setShowPalette(p => !p);
+      }
+      if (e.key === 'Escape') {
+        setShowPalette(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center">جاري التحميل...</div>;
   
@@ -14,14 +30,24 @@ export function AdminLayout() {
     return <Navigate to="/login" />;
   }
 
-  const menuItems = [
-    { icon: LayoutDashboard, label: 'لوحة القيادة', path: '/admin', exact: true },
+  const erpItems = [
+    { icon: Calculator, label: 'لوحة المحاسبة', path: '/admin/erp' },
+    { icon: Plane, label: 'الرحلات والعروض', path: '/admin/trips' },
+    { icon: CreditCard, label: 'الحجوزات', path: '/admin/reservations' },
+    { icon: Receipt, label: 'المصاريف', path: '/admin/expenses' },
+    { icon: Wallet, label: 'يومية الصندوق والبنك', path: '/admin/cash-journal' },
+  ];
+
+  const adminItems = [
+    { icon: LayoutDashboard, label: 'لوحة القيادة (الموقع)', path: '/admin', exact: true },
     { icon: Package, label: 'إدارة الباقات', path: '/admin/packages' },
     { icon: Building2, label: 'إدارة الفنادق', path: '/admin/hotels' },
     { icon: Briefcase, label: 'إدارة الخدمات', path: '/admin/services' },
     { icon: UsersIcon, label: 'إدارة المستخدمين', path: '/admin/users' },
     { icon: Settings, label: 'إعدادات الحساب', path: '/admin/account' },
   ];
+
+  const allItems = [...erpItems, ...adminItems];
 
   const isActive = (path: string, exact?: boolean) => {
     if (exact && location.pathname !== path) return false;
@@ -46,22 +72,48 @@ export function AdminLayout() {
         </button>
       </div>
       
-      <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
-        {menuItems.map((item) => (
-          <Link
-            key={item.path}
-            to={item.path}
-            onClick={() => setIsMobileMenuOpen(false)}
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-              isActive(item.path, item.exact)
-                ? 'bg-primary text-white'
-                : 'hover:bg-slate-800 hover:text-white text-slate-300'
-            }`}
-          >
-            <item.icon className="w-5 h-5" />
-            <span className="font-medium">{item.label}</span>
-          </Link>
-        ))}
+      <nav className="flex-1 py-6 px-3 overflow-y-auto space-y-6">
+        <div>
+          <div className="px-4 text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">نظام إدارة الوكالة (ERP)</div>
+          <div className="space-y-1">
+            {erpItems.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                  isActive(item.path, item.exact)
+                    ? 'bg-primary text-white'
+                    : 'hover:bg-slate-800 hover:text-white text-slate-300'
+                }`}
+              >
+                <item.icon className="w-5 h-5" />
+                <span className="font-medium">{item.label}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        <div>
+           <div className="px-4 text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">بوابة الموقع الإلكتروني</div>
+           <div className="space-y-1">
+             {adminItems.map((item) => (
+               <Link
+                 key={item.path}
+                 to={item.path}
+                 onClick={() => setIsMobileMenuOpen(false)}
+                 className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                   isActive(item.path, item.exact)
+                     ? 'bg-primary text-white'
+                     : 'hover:bg-slate-800 hover:text-white text-slate-300'
+                 }`}
+               >
+                 <item.icon className="w-5 h-5" />
+                 <span className="font-medium">{item.label}</span>
+               </Link>
+             ))}
+           </div>
+        </div>
       </nav>
       
       <div className="p-4 border-t border-slate-800">
@@ -103,7 +155,7 @@ export function AdminLayout() {
               <Menu className="w-6 h-6" />
             </button>
             <h2 className="text-xl font-bold text-slate-800 hidden sm:block">
-              {menuItems.find(i => isActive(i.path))?.label || 'لوحة القيادة'}
+              {allItems.find(i => isActive(i.path))?.label || 'لوحة القيادة'}
             </h2>
           </div>
           <div className="flex items-center gap-4">
@@ -117,6 +169,32 @@ export function AdminLayout() {
           <Outlet />
         </div>
       </main>
+      {showPalette && (
+        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-start justify-center pt-[15vh]" onClick={() => setShowPalette(false)}>
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center px-4 py-3 border-b border-slate-100">
+              <Search className="w-5 h-5 text-slate-400 shrink-0" />
+              <input type="text" placeholder="ما الذي تبحث عنه؟ (حجز، رحلة، مصروف)..." className="w-full bg-transparent border-0 focus:ring-0 px-4 text-slate-800 placeholder-slate-400 outline-none" autoFocus />
+              <div className="flex items-center gap-1 shrink-0">
+                <kbd className="px-2 py-1 bg-slate-100 text-slate-500 rounded text-xs">ESC</kbd>
+              </div>
+            </div>
+            <div className="p-2 py-4">
+              <div className="px-3 text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">صفحات سريعة</div>
+              {allItems.map(item => (
+                 <button key={item.path} onClick={() => { navigate(item.path); setShowPalette(false); }} className="w-full text-right flex items-center justify-between px-3 py-3 rounded-lg hover:bg-slate-50 text-slate-700 transition-colors">
+                   <div className="flex items-center gap-3">
+                     <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                       <item.icon className="w-4 h-4" />
+                     </div>
+                     <span className="font-semibold">{item.label}</span>
+                   </div>
+                 </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

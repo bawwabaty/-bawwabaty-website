@@ -29,6 +29,14 @@ const AdminServices = React.lazy(() => import('./pages/admin/Services').then(m =
 const AdminUsers = React.lazy(() => import('./pages/admin/Users').then(m => ({ default: m.AdminUsers })));
 const AdminAccount = React.lazy(() => import('./pages/admin/Account').then(m => ({ default: m.AdminAccount })));
 
+// ERP Pages
+const ERPDashboard = React.lazy(() => import('./pages/admin/ERPDashboard').then(m => ({ default: m.ERPDashboard })));
+const Trips = React.lazy(() => import('./pages/admin/Trips').then(m => ({ default: m.Trips })));
+const TripDetails = React.lazy(() => import('./pages/admin/TripDetails').then(m => ({ default: m.TripDetails })));
+const Reservations = React.lazy(() => import('./pages/admin/Reservations').then(m => ({ default: m.Reservations })));
+const Expenses = React.lazy(() => import('./pages/admin/Expenses').then(m => ({ default: m.Expenses })));
+const CashJournal = React.lazy(() => import('./pages/admin/CashJournal').then(m => ({ default: m.CashJournal })));
+
 const SuspenseFallback = () => <div className="flex h-screen w-full items-center justify-center bg-slate-50"><div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>;
 
 function App() {
@@ -57,11 +65,20 @@ function App() {
             {/* Admin Routes */}
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
+              <Route path="account" element={<AdminAccount />} />
               <Route path="packages" element={<AdminPackages />} />
+              <Route path="users" element={<AdminUsers />} />
               <Route path="hotels" element={<AdminHotels />} />
               <Route path="services" element={<AdminServices />} />
-              <Route path="users" element={<AdminUsers />} />
-              <Route path="account" element={<AdminAccount />} />
+              
+              {/* ERP / Accounting System */}
+              <Route path="erp" element={<ERPDashboard />} />
+              <Route path="trips" element={<Trips />} />
+              <Route path="trips/:id" element={<TripDetails />} />
+              <Route path="reservations" element={<Reservations />} />
+              <Route path="expenses" element={<Expenses />} />
+              <Route path="cash-journal" element={<CashJournal />} />
+              
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>

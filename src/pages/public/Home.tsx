@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { FloatingWhatsApp } from '../../components/FloatingWhatsApp';
+import { FloatingSocial } from '../../components/FloatingSocial';
 import { getWhatsAppUrl } from '../../lib/whatsapp';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 
@@ -90,19 +90,7 @@ export function Home() {
     fetchFeatured();
   }, []);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const el = document.getElementById('partners-slider');
-      if (el) {
-        if (el.scrollLeft >= el.scrollWidth - el.clientWidth - 10) {
-          el.scrollTo({ left: 0, behavior: 'smooth' });
-        } else {
-          el.scrollBy({ left: 180, behavior: 'smooth' });
-        }
-      }
-    }, 2500);
-    return () => clearInterval(interval);
-  }, []);
+
 
   const getMinPrice = (pkg: any) => {
     if (!pkg.programs || pkg.programs.length === 0) return 'تواصل معنا';
@@ -361,16 +349,15 @@ export function Home() {
                 .hide-scrollbar::-webkit-scrollbar { display: none; }
               `}} />
               {[
-                { name: 'الخطوط السعودية', logo: 'https://res.cloudinary.com/dl7hgexkl/image/upload/v1780315423/saudia_LOGO_cfemva.svg' },
-                { name: 'الخطوط الملكية المغربية', logo: 'https://res.cloudinary.com/dl7hgexkl/image/upload/v1780315422/Logo_Royal_Air_Maroc_khdu4h.svg' },
+                { name: 'الخطوط السعودية', logo: 'https://res.cloudinary.com/dl7hgexkl/image/upload/v1780315423/saudia_LOGO_cfemva.svg', large: true },
+                { name: 'الخطوط الملكية المغربية', logo: 'https://res.cloudinary.com/dl7hgexkl/image/upload/v1780315422/Logo_Royal_Air_Maroc_khdu4h.svg', large: true },
                 { name: 'الإتحاد للطيران', logo: 'https://res.cloudinary.com/dl7hgexkl/image/upload/v1780315422/etihad-airways-1_u5ovxt.svg', small: true },
                 { name: 'الخطوط الجوية القطرية', logo: 'https://res.cloudinary.com/dl7hgexkl/image/upload/v1780313927/Qatar_Airways-Logo.wine_bsqktc.svg', large: true },
                 { name: 'طيران ناس', logo: 'https://res.cloudinary.com/dl7hgexkl/image/upload/v1780315422/LOGO_FLYNAS_dmxq9p.svg', small: true },
                 { name: 'الخطوط الجوية التركية', logo: 'https://res.cloudinary.com/dl7hgexkl/image/upload/v1780315656/Colorful_double-line_horizontal_Turkish_Airlines_logo_w3s08i.svg', large: true },
-                { name: 'مصر للطيران', logo: 'https://res.cloudinary.com/dl7hgexkl/image/upload/v1780315476/mada_social_media_4-2.5_m.pdf_izobjv.svg' },
-                { name: 'الخطوط الجوية الفرنسية', logo: 'https://logo.clearbit.com/airfrance.com' }
+                { name: 'مصر للطيران', logo: 'https://res.cloudinary.com/dl7hgexkl/image/upload/v1780315476/mada_social_media_4-2.5_m.pdf_izobjv.svg', large: true }
               ].map((airline, idx) => (
-                <div key={idx} className={`snap-center flex-shrink-0 ${airline.large ? 'w-36 md:w-48 h-12 md:h-16' : airline.small ? 'w-24 md:w-28 h-8 md:h-10' : 'w-28 md:w-36 h-10 md:h-14'} flex items-center justify-center opacity-60 hover:opacity-100 transition-opacity duration-300`}>
+                <div key={idx} className={`snap-center flex-shrink-0 ${airline.large ? 'w-48 md:w-64 h-16 md:h-20' : 'w-24 md:w-32 h-10 md:h-12'} flex items-center justify-center opacity-60 hover:opacity-100 transition-opacity duration-300`}>
                   <img src={airline.logo} alt={airline.name} title={airline.name} loading="lazy" className="max-w-full max-h-full object-contain drop-shadow-sm" />
                 </div>
               ))}
@@ -435,7 +422,7 @@ export function Home() {
         </div>
       </section>
 
-      <FloatingWhatsApp />
+      <FloatingSocial />
     </div>
   );
 }

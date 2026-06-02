@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { collection, query, getDocs } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { Package, Users, Building2, TrendingUp } from 'lucide-react';
+import { Package, Users, Building2, TrendingUp, Calculator, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 
 export function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -47,8 +48,13 @@ export function AdminDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h2 className="text-2xl font-bold text-slate-800">نظرة عامة</h2>
+        <Link to="/admin/erp" className="bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 shadow-sm hover:shadow-md">
+          <Calculator className="w-5 h-5" />
+          الانتقال للوحة المحاسبة والانظمة الإدارية (ERP)
+          <ArrowLeft className="w-4 h-4 mr-1" />
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

@@ -14,9 +14,9 @@ export function Footer() {
               وكالتك الموثوقة لخدمات السياحة والسفر والعمرة. نقدم أفضل الباقات والخدمات المتكاملة لتجربة سفر لا تُنسى.
             </p>
             <div className="flex gap-4">
-              <a href="#" className="text-slate-400 hover:text-white transition-colors bg-slate-800 p-3 rounded-full hover:bg-secondary"><Facebook className="w-6 h-6"/></a>
-              <a href="#" className="text-slate-400 hover:text-white transition-colors bg-slate-800 p-3 rounded-full hover:bg-secondary"><Instagram className="w-6 h-6"/></a>
-              <a href="#" className="text-slate-400 hover:text-white transition-colors bg-slate-800 p-3 rounded-full hover:bg-secondary"><Twitter className="w-6 h-6"/></a>
+              <a href="https://facebook.com/bawwabaty" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition-colors bg-slate-800 p-3 rounded-full hover:bg-secondary"><Facebook className="w-6 h-6"/></a>
+              <a href="https://instagram.com/bawwabaty" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition-colors bg-slate-800 p-3 rounded-full hover:bg-secondary"><Instagram className="w-6 h-6"/></a>
+              <a href="https://twitter.com/bawwabaty" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition-colors bg-slate-800 p-3 rounded-full hover:bg-secondary"><Twitter className="w-6 h-6"/></a>
             </div>
           </div>
 
@@ -34,11 +34,11 @@ export function Footer() {
           <div>
             <h3 className="text-white font-bold text-2xl mb-6">خدمات العمرة</h3>
             <ul className="space-y-4 text-base md:text-lg text-slate-400">
-              <li><a href="#" className="hover:text-secondary transition-colors">عمرة شهر رمضان</a></li>
-              <li><a href="#" className="hover:text-secondary transition-colors">عمرة المولد النبوي</a></li>
-              <li><a href="#" className="hover:text-secondary transition-colors">باقات العمرة الاقتصادية</a></li>
-              <li><a href="#" className="hover:text-secondary transition-colors">باقات العمرة المميزة (VIP)</a></li>
-              <li><a href="#" className="hover:text-secondary transition-colors">خدمات التأشيرات</a></li>
+              <li><Link to="/umrah" className="hover:text-secondary transition-colors">عمرة شهر رمضان</Link></li>
+              <li><Link to="/umrah" className="hover:text-secondary transition-colors">عمرة المولد النبوي</Link></li>
+              <li><Link to="/umrah" className="hover:text-secondary transition-colors">باقات العمرة الاقتصادية</Link></li>
+              <li><Link to="/umrah" className="hover:text-secondary transition-colors">باقات العمرة المميزة (VIP)</Link></li>
+              <li><Link to="/services" className="hover:text-secondary transition-colors">خدمات التأشيرات</Link></li>
             </ul>
           </div>
 

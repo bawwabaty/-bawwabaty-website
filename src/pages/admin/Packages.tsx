@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { Plus, Edit2, Trash2, X, Save, Image as ImageIcon, PlusCircle, Trash } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Save, Image as ImageIcon, PlusCircle, Trash, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const ROOM_TYPES = ['ثنائي', 'ثلاثي', 'رباعي', 'خماسي', 'سداسي'];
@@ -43,12 +43,14 @@ interface Package {
   programs: Program[];
   roomTypes: string[];
   featured: boolean;
+  capacity?: number;
 }
 
 export function AdminPackages() {
   const [packages, setPackages] = useState<Package[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const defaultFormData: Omit<Package, 'id'> = {
@@ -62,7 +64,8 @@ export function AdminPackages() {
     gallery: [],
     programs: [],
     roomTypes: ['ثنائي', 'ثلاثي', 'رباعي'],
-    featured: false
+    featured: false,
+    capacity: 50
   };
 
   const [formData, setFormData] = useState<Omit<Package, 'id'>>(defaultFormData);
@@ -78,6 +81,55 @@ export function AdminPackages() {
       console.error(error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const syncPackagesToERP = async () => {
+    setIsSyncing(true);
+    const syncToast = toast.loading('جاري مزامنة الباقات مع المحاسبة...');
+    try {
+      // 1. Fetch current trips in ERP
+      const response = await fetch("/api/trips");
+      const currentTrips = await response.json();
+      const existingDestinations = currentTrips.map((t: any) => t.destination);
+
+      // 2. Find packages that don't have a matching trip destination
+      const packagesToSync = packages.filter(pkg => !existingDestinations.includes(pkg.name));
+      
+      if (packagesToSync.length === 0) {
+        toast.success("جميع الباقات متزامنة مسبقاً مع المحاسبة", { id: syncToast });
+        setIsSyncing(false);
+        return;
+      }
+
+      // 3. Add each missing package to ERP Trips
+      for (const pkg of packagesToSync) {
+        const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase();
+        const today = new Date();
+        const endDate = new Date(today);
+        endDate.setDate(today.getDate() + 14); // default 14 days later
+        
+        await fetch("/api/trips", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            code: `PKG-${today.getFullYear()}-${randomStr}`,
+            destination: pkg.name,
+            capacity: pkg.capacity || 50,
+            default_price: getMinPrice(pkg as unknown as Package) || 0,
+            start_date: today.toISOString().split('T')[0],
+            end_date: endDate.toISOString().split('T')[0],
+            image: pkg.image
+          })
+        });
+      }
+      
+      toast.success(`تم مزامنة ${packagesToSync.length} باقة بنجاح`, { id: syncToast });
+    } catch (error) {
+      console.error("فشل مزامنة الباقات", error);
+      toast.error("حدث خطأ أثناء المزامنة", { id: syncToast });
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -99,6 +151,30 @@ export function AdminPackages() {
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         });
+        
+        // Also add to ERP Trips automatically
+        try {
+          const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase();
+          const today = new Date();
+          const endDate = new Date(today);
+          endDate.setDate(today.getDate() + 14); // default 14 days later
+          
+          await fetch("/api/trips", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              code: `PKG-${today.getFullYear()}-${randomStr}`,
+              destination: formData.name,
+              capacity: formData.capacity || 50,
+              default_price: getMinPrice(formData as unknown as Package) || 0,
+              start_date: today.toISOString().split('T')[0],
+              end_date: endDate.toISOString().split('T')[0],
+              image: formData.image
+            })
+          });
+        } catch (erpError) {
+          console.error("فشل إضافة الرحلة في نظام المحاسبة", erpError);
+        }
       }
       fetchPackages();
       setIsModalOpen(false);
@@ -225,13 +301,24 @@ export function AdminPackages() {
           <h2 className="text-2xl font-bold text-slate-800">إدارة الباقات</h2>
           <p className="text-slate-500">أضف، عدل، أو احذف باقات العمرة والسياحة</p>
         </div>
-        <button 
-          onClick={() => { setFormData(defaultFormData); setEditingId(null); setIsModalOpen(true); }}
-          className="bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-xl font-medium transition-colors flex items-center gap-2"
-        >
-          <Plus className="w-5 h-5" />
-          إضافة باقة جديدة
-        </button>
+        <div className="flex gap-3">
+          <button 
+            onClick={syncPackagesToERP}
+            disabled={isSyncing || loading || packages.length === 0}
+            className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-3 rounded-xl font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
+            title="مزامنة الباقات السابقة مع لوحة المحاسبة وإدارة الرحلات"
+          >
+            <RefreshCw className={`w-5 h-5 ${isSyncing ? 'animate-spin' : ''}`} />
+            مزامنة السابقة للمحاسبة
+          </button>
+          <button 
+            onClick={() => { setFormData(defaultFormData); setEditingId(null); setIsModalOpen(true); }}
+            className="bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-xl font-medium transition-colors flex items-center gap-2"
+          >
+            <Plus className="w-5 h-5" />
+            إضافة باقة جديدة
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -321,6 +408,15 @@ export function AdminPackages() {
                         type="text" required
                         value={formData.duration}
                         onChange={e => setFormData({...formData, duration: e.target.value})}
+                        className="w-full rounded-lg border-slate-300 border p-3 focus:ring-primary focus:border-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">عدد المقاعد (إختياري)</label>
+                      <input 
+                        type="number" min="1"
+                        value={formData.capacity || ''}
+                        onChange={e => setFormData({...formData, capacity: parseInt(e.target.value) || undefined})}
                         className="w-full rounded-lg border-slate-300 border p-3 focus:ring-primary focus:border-primary"
                       />
                     </div>
