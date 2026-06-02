@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Reservation, Trip } from "../../erp-types";
 import { CreditCard, Plus, Plane, Users, CheckCircle, Clock, AlertTriangle, XCircle, Home } from "lucide-react";
 import toast from "react-hot-toast";

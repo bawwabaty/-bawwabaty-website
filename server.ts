@@ -3,6 +3,8 @@ import fs from "fs";
 import path from "path";
 import cors from "cors";
 import { createServer as createViteServer } from "vite";
+import { initializeApp } from "firebase/app";
+import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
 
 const app = express();
 app.use(cors());
@@ -10,6 +12,20 @@ app.use(express.json());
 const PORT = 3000;
 
 const DB_PATH = path.join(process.cwd(), "travel-erp-v2.json");
+
+// Initialize Firebase for Cloud Backup
+let firestoreDb: any = null;
+try {
+  const configPath = path.join(process.cwd(), "firebase-applet-config.json");
+  if (fs.existsSync(configPath)) {
+    const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+    const firebaseApp = initializeApp(config);
+    firestoreDb = getFirestore(firebaseApp, config.firestoreDatabaseId);
+    console.log("Firebase initialized for persistent cloud storage backup.");
+  }
+} catch (error) {
+  console.error("Failed to initialize Firebase in server:", error);
+}
 
 // Helper to load DB
 function loadDb() {
@@ -30,9 +46,17 @@ function loadDb() {
   return JSON.parse(data);
 }
 
-// Helper to save DB
+// Helper to save DB with automated Cloud Backup
 function saveDb(data: any) {
-  fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
+  const stringified = JSON.stringify(data, null, 2);
+  fs.writeFileSync(DB_PATH, stringified);
+  if (firestoreDb) {
+    const docRef = doc(firestoreDb, "backups", "current");
+    setDoc(docRef, { dbContent: stringified, updatedAt: new Date().toISOString() })
+      .catch((error) => {
+        console.error("Failed to sync database to cloud Firestore:", error);
+      });
+  }
 }
 
 // Helper for generic IDs
@@ -353,6 +377,26 @@ app.get("/api/cash-journal", (req, res) => {
 
 // Vite / Frontend
 async function startServer() {
+  // Restore database from cloud backup first
+  if (firestoreDb) {
+    try {
+      console.log("Checking Firestore for database backup...");
+      const docRef = doc(firestoreDb, "backups", "current");
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const cloudData = docSnap.data();
+        if (cloudData && cloudData.dbContent) {
+          fs.writeFileSync(DB_PATH, cloudData.dbContent, "utf-8");
+          console.log("Successfully restored database from cloud Firestore backup.");
+        }
+      } else {
+        console.log("No cloud database backup found. Starting fresh.");
+      }
+    } catch (error) {
+      console.error("Error restoring database from cloud backup:", error);
+    }
+  }
+
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },

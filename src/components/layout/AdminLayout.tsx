@@ -31,11 +31,11 @@ export function AdminLayout() {
   }
 
   const erpItems = [
-    { icon: Calculator, label: 'لوحة المحاسبة', path: '/admin/erp' },
-    { icon: Plane, label: 'الرحلات والعروض', path: '/admin/trips' },
-    { icon: CreditCard, label: 'الحجوزات', path: '/admin/reservations' },
-    { icon: Receipt, label: 'المصاريف', path: '/admin/expenses' },
-    { icon: Wallet, label: 'يومية الصندوق والبنك', path: '/admin/cash-journal' },
+    { icon: Calculator, label: 'لوحة المحاسبة', path: '/admin/erp', exact: false },
+    { icon: Plane, label: 'إدارة الرحلات والعروض', path: '/admin/trips', exact: false },
+    { icon: CreditCard, label: 'الحجوزات', path: '/admin/reservations', exact: false },
+    { icon: Receipt, label: 'المصاريف', path: '/admin/expenses', exact: false },
+    { icon: Wallet, label: 'يومية الصندوق والبنك', path: '/admin/cash-journal', exact: false },
   ];
 
   const adminItems = [

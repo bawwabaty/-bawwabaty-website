@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { CashJournal as CashJournalType } from "../../erp-types";
 import { Download, Plus, Wallet, TrendingUp, TrendingDown, ArrowDownLeft, ArrowUpRight, X } from "lucide-react";
 import toast from "react-hot-toast";

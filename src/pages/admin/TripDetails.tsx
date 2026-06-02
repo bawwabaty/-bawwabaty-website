@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, ArrowRight, FileText, BedDouble, Users, Wallet, TrendingUp, Download, Trash2 } from "lucide-react";
 import { Trip, Reservation, Expense } from "../../erp-types";
