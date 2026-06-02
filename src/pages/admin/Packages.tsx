@@ -88,43 +88,28 @@ export function AdminPackages() {
     setIsSyncing(true);
     const syncToast = toast.loading('جاري مزامنة الباقات مع المحاسبة...');
     try {
-      // 1. Fetch current trips in ERP
-      const response = await fetch("/api/trips");
-      const currentTrips = await response.json();
-      const existingDestinations = currentTrips.map((t: any) => t.destination);
-
-      // 2. Find packages that don't have a matching trip destination
-      const packagesToSync = packages.filter(pkg => !existingDestinations.includes(pkg.name));
-      
-      if (packagesToSync.length === 0) {
-        toast.success("جميع الباقات متزامنة مسبقاً مع المحاسبة", { id: syncToast });
+      if (packages.length === 0) {
+        toast.dismiss(syncToast);
         setIsSyncing(false);
         return;
       }
 
-      // 3. Add each missing package to ERP Trips
-      for (const pkg of packagesToSync) {
-        const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase();
-        const today = new Date();
-        const endDate = new Date(today);
-        endDate.setDate(today.getDate() + 14); // default 14 days later
-        
-        await fetch("/api/trips", {
+      // Sync every package reliably
+      for (const pkg of packages) {
+        await fetch("/api/trips/sync", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            code: `PKG-${today.getFullYear()}-${randomStr}`,
-            destination: pkg.name,
-            capacity: pkg.capacity || 50,
-            default_price: getMinPrice(pkg as unknown as Package) || 0,
-            start_date: today.toISOString().split('T')[0],
-            end_date: endDate.toISOString().split('T')[0],
+            id: pkg.id,
+            name: pkg.name,
+            capacity: pkg.capacity,
+            minPrice: getMinPrice(pkg),
             image: pkg.image
           })
         });
       }
       
-      toast.success(`تم مزامنة ${packagesToSync.length} باقة بنجاح`, { id: syncToast });
+      toast.success(`تم مزامنة جميع الباقات مع المحاسبة بنجاح دون تكرار أو حذف بيانات`, { id: syncToast });
     } catch (error) {
       console.error("فشل مزامنة الباقات", error);
       toast.error("حدث خطأ أثناء المزامنة", { id: syncToast });
@@ -145,35 +130,45 @@ export function AdminPackages() {
           ...formData,
           updatedAt: serverTimestamp()
         });
+
+        // Sync update to ERP in-place
+        try {
+          await fetch("/api/trips/sync", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: editingId,
+              name: formData.name,
+              capacity: formData.capacity,
+              minPrice: getMinPrice(formData as unknown as Package),
+              image: formData.image
+            })
+          });
+        } catch (syncError) {
+          console.error("فشل مزامنة التعديلات مع المحاسبة", syncError);
+        }
       } else {
-        await addDoc(collection(db, 'packages'), {
+        const docRef = await addDoc(collection(db, 'packages'), {
           ...formData,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         });
         
-        // Also add to ERP Trips automatically
+        // Sync creation to ERP automatically
         try {
-          const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase();
-          const today = new Date();
-          const endDate = new Date(today);
-          endDate.setDate(today.getDate() + 14); // default 14 days later
-          
-          await fetch("/api/trips", {
+          await fetch("/api/trips/sync", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              code: `PKG-${today.getFullYear()}-${randomStr}`,
-              destination: formData.name,
-              capacity: formData.capacity || 50,
-              default_price: getMinPrice(formData as unknown as Package) || 0,
-              start_date: today.toISOString().split('T')[0],
-              end_date: endDate.toISOString().split('T')[0],
+              id: docRef.id,
+              name: formData.name,
+              capacity: formData.capacity,
+              minPrice: getMinPrice(formData as unknown as Package),
               image: formData.image
             })
           });
-        } catch (erpError) {
-          console.error("فشل إضافة الرحلة في نظام المحاسبة", erpError);
+        } catch (syncError) {
+          console.error("فشل إضافة الرحلة تلقائياً للمحاسبة", syncError);
         }
       }
       fetchPackages();
@@ -193,6 +188,16 @@ export function AdminPackages() {
     if (!window.confirm('هل أنت متأكد من حذف هذه الباقة؟')) return;
     try {
       await deleteDoc(doc(db, 'packages', id));
+
+      // Call sync delete to hide the corresponding trip in ERP
+      try {
+        await fetch(`/api/trips/sync/${id}`, {
+          method: "DELETE"
+        });
+      } catch (delError) {
+        console.error("فشل حذف الرحلة المقابلة في المحاسبة", delError);
+      }
+
       toast.success('تم الحذف بنجاح');
       fetchPackages();
     } catch (error) {

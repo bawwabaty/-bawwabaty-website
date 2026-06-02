@@ -1,13 +1,30 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Menu, X, Plane, User as UserIcon, LogOut } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const { user, isAdmin, logout } = useAuth();
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 20) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
+    handleScroll();
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const isHome = location.pathname === '/';
+  const isTransparent = isHome && !isScrolled && !isOpen;
 
   const navLinks = [
     { title: 'الرئيسية', path: '/' },
@@ -22,50 +39,86 @@ export function Navbar() {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <nav className="fixed w-full z-50 transition-all duration-300 bg-white/95 backdrop-blur-md shadow-sm">
+    <nav className={`fixed w-full z-50 transition-all duration-300 ${
+      isTransparent
+        ? 'bg-transparent shadow-none py-2'
+        : 'bg-white/95 backdrop-blur-md shadow-sm py-0'
+    }`}>
       <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-24 items-center">
           {/* Logo */}
           <div className="flex-shrink-0 flex items-center">
             <Link to="/" className="flex items-center gap-2">
-              <img src="https://res.cloudinary.com/dl7hgexkl/image/upload/v1780314494/LOGO_BAWWABATY_vswaog.svg" alt="بوابتي" className="h-16 md:h-20" />
+              <img 
+                src="https://res.cloudinary.com/dl7hgexkl/image/upload/v1780314494/LOGO_BAWWABATY_vswaog.svg" 
+                alt="بوابتي" 
+                className="h-16 md:h-20 transition-all duration-300" 
+                style={isTransparent ? { filter: 'brightness(0) invert(1)' } : undefined}
+              />
             </Link>
           </div>
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-8">
             <div className="flex items-baseline space-x-6 space-x-reverse">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.path}
-                  to={link.path}
-                  className={`px-4 py-2 rounded-xl text-lg font-bold transition-all ${
-                    isActive(link.path)
-                      ? 'text-primary bg-primary/10'
-                      : 'text-slate-600 hover:text-primary hover:bg-primary/5'
-                  }`}
-                >
-                  {link.title}
-                </Link>
-              ))}
+              {navLinks.map((link) => {
+                const active = isActive(link.path);
+                return (
+                  <Link
+                    key={link.path}
+                    to={link.path}
+                    className={`px-4 py-2 rounded-xl text-lg font-bold transition-all ${
+                      active
+                        ? isTransparent
+                          ? 'text-white bg-white/20'
+                          : 'text-primary bg-primary/10'
+                        : isTransparent
+                          ? 'text-white/90 hover:text-white hover:bg-white/10'
+                          : 'text-slate-600 hover:text-primary hover:bg-primary/5'
+                    }`}
+                  >
+                    {link.title}
+                  </Link>
+                );
+              })}
             </div>
 
-            <div className="flex items-center gap-4 mr-6 pl-6 border-r-2 border-slate-200">
+            <div className={`flex items-center gap-4 mr-6 pl-6 border-r-2 ${isTransparent ? 'border-white/20' : 'border-slate-200'}`}>
               {user ? (
                 <div className="flex items-center gap-4">
                   {isAdmin && (
-                    <Link to="/admin" className="text-lg font-bold text-secondary hover:text-secondary-dark">
+                    <Link 
+                      to="/admin" 
+                      className={`text-lg font-bold transition-all ${
+                        isTransparent 
+                          ? 'text-white hover:text-white/80' 
+                          : 'text-secondary hover:text-secondary-dark'
+                      }`}
+                    >
                       لوحة التحكم
                     </Link>
                   )}
-                  <button onClick={logout} aria-label="تسجيل خروج" className="p-3 bg-slate-50 rounded-full text-slate-500 hover:text-red-500 hover:bg-red-50 transition-colors" title="تسجيل خروج">
+                  <button 
+                    onClick={logout} 
+                    aria-label="تسجيل خروج" 
+                    className={`p-3 rounded-full transition-colors ${
+                      isTransparent
+                        ? 'bg-white/10 text-white/80 hover:text-white hover:bg-white/20'
+                        : 'bg-slate-50 text-slate-500 hover:text-red-500 hover:bg-red-50'
+                    }`}
+                    title="تسجيل خروج"
+                  >
                     <LogOut className="w-6 h-6" />
                   </button>
                 </div>
               ) : (
                 <Link
                   to="/login"
-                  className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-8 py-3 rounded-2xl text-lg font-bold transition-all shadow-md hover:shadow-lg"
+                  className={`flex items-center gap-2 px-8 py-3 rounded-2xl text-lg font-bold transition-all shadow-md hover:shadow-lg ${
+                    isTransparent
+                      ? 'bg-white text-primary hover:bg-white/90'
+                      : 'bg-primary hover:bg-primary-dark text-white'
+                  }`}
                 >
                   <UserIcon className="w-5 h-5" />
                   تسجيل الدخول
@@ -79,7 +132,11 @@ export function Navbar() {
             <button
               onClick={() => setIsOpen(!isOpen)}
               aria-label="القائمة"
-              className="text-slate-600 hover:text-primary focus:outline-none p-2"
+              className={`focus:outline-none p-2 rounded-xl transition-colors ${
+                isTransparent
+                  ? 'text-white hover:bg-white/10'
+                  : 'text-slate-600 hover:text-primary'
+              }`}
             >
               {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>

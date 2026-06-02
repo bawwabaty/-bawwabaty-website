@@ -1,12 +1,12 @@
 import { Link } from 'react-router-dom';
-import { MapPin, Phone, Mail, Facebook, Instagram, Twitter } from 'lucide-react';
+import { MapPin, Phone, Mail, Facebook, Instagram } from 'lucide-react';
 
 export function Footer() {
   return (
     <footer className="bg-slate-900 text-slate-300 py-20 border-t border-slate-800">
       <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-          <div className="col-span-1 md:col-span-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12">
+          <div className="col-span-1">
              <div className="flex items-center gap-2 mb-6">
                <img src="https://res.cloudinary.com/dl7hgexkl/image/upload/v1780314494/LOGO_BAWWABATY_vswaog.svg" alt="بوابتي" className="h-20 md:h-28 brightness-0 invert" />
             </div>
@@ -14,9 +14,8 @@ export function Footer() {
               وكالتك الموثوقة لخدمات السياحة والسفر والعمرة. نقدم أفضل الباقات والخدمات المتكاملة لتجربة سفر لا تُنسى.
             </p>
             <div className="flex gap-4">
-              <a href="https://facebook.com/bawwabaty" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition-colors bg-slate-800 p-3 rounded-full hover:bg-secondary"><Facebook className="w-6 h-6"/></a>
-              <a href="https://instagram.com/bawwabaty" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition-colors bg-slate-800 p-3 rounded-full hover:bg-secondary"><Instagram className="w-6 h-6"/></a>
-              <a href="https://twitter.com/bawwabaty" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition-colors bg-slate-800 p-3 rounded-full hover:bg-secondary"><Twitter className="w-6 h-6"/></a>
+              <a href="https://web.facebook.com/p/%D8%A8%D9%88%D8%A7%D8%A8%D8%AA%D9%8I-%D9%84%D9%84%D8%B3%D9%8A%D8%A7%D8%AD%D9%8A-%D9%88-%D8%A7%D9%84%D8%B3%D9%81%D8%B1-61570841673325/?_rdc=1&_rdr#" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition-colors bg-slate-800 p-3 rounded-full hover:bg-secondary" title="تابعنا على فيسبوك"><Facebook className="w-6 h-6"/></a>
+              <a href="https://www.instagram.com/bawwabaty_travel/" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition-colors bg-slate-800 p-3 rounded-full hover:bg-secondary" title="تابعنا على انستغرام"><Instagram className="w-6 h-6"/></a>
             </div>
           </div>
 

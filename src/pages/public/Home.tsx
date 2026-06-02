@@ -1,6 +1,7 @@
+import React from 'react';
 import { motion } from 'framer-motion';
 import { Plane, Star, ShieldCheck, Clock, MapPin, Building, Building2, Map as MapIcon, ArrowLeft, Ticket, Users, FileText, Bus, CheckCircle2, Headset, ThumbsUp, CreditCard, BookOpen, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
@@ -58,7 +59,12 @@ const servicesList = [
 
 export function Home() {
   useDocumentTitle('الرئيسية');
+  const navigate = useNavigate();
   const [featuredPackages, setFeaturedPackages] = useState<any[]>([]);
+  const [searchTab, setSearchTab] = useState<'umrah' | 'hotels' | 'flights'>('umrah');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [travelDate, setTravelDate] = useState('');
+  const [travelers, setTravelers] = useState('1');
 
   useEffect(() => {
     const fetchFeatured = async () => {
@@ -90,8 +96,6 @@ export function Home() {
     fetchFeatured();
   }, []);
 
-
-
   const getMinPrice = (pkg: any) => {
     if (!pkg.programs || pkg.programs.length === 0) return 'تواصل معنا';
     let min = Infinity;
@@ -105,23 +109,53 @@ export function Home() {
     return min === Infinity ? 'تواصل معنا' : min;
   };
 
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const queryLower = searchQuery.trim().toLowerCase();
+    
+    // Determine active search type
+    let searchType = searchTab;
+    if (queryLower.includes('عمرة') || queryLower.includes('العمرة') || queryLower.includes('باقة')) {
+      searchType = 'umrah';
+    } else if (queryLower.includes('فندق') || queryLower.includes('فنادق')) {
+      searchType = 'hotels';
+    } else if (queryLower.includes('طيران') || queryLower.includes('تذكرة') || queryLower.includes('رحلة')) {
+      searchType = 'flights';
+    }
+
+    if (searchType === 'umrah') {
+      navigate('/umrah');
+    } else {
+      const serviceName = searchType === 'hotels' ? 'حجز الفنادق والإقامة' : 'حجز تذاكر الطيران';
+      const text = `السلام عليكم ورحمة الله، أود الاستفسار عن خدمة (${serviceName}).
+      
+- الوجهة المطلوبة: ${searchQuery || 'طلب مباشر'}
+- تاريخ السفر المتوقع: ${travelDate || 'غير محدد'}
+- عدد المسافرين: ${travelers} مسافر
+شكراً لكم.`;
+
+      const whatsappUrl = getWhatsAppUrl(text);
+      window.open(whatsappUrl, '_blank', 'noreferrer,noopener');
+    }
+  };
+
   return (
     <div className="relative">
       {/* Hero Section */}
-      <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden py-20">
+      <section className="relative min-h-[92vh] sm:min-h-screen flex items-center justify-center overflow-hidden pt-36 pb-20">
         <div className="absolute inset-0 w-full h-full">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary-dark/90 to-primary/50 z-10" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/55 to-slate-900/40 z-10" />
           <motion.img 
             initial={{ scale: 1.1 }}
             animate={{ scale: 1 }}
             transition={{ duration: 1.5, ease: "easeOut" }}
-            src="https://images.unsplash.com/photo-1591806336026-f825d72071a2?q=80&w=2400&auto=format&fit=crop" 
+            src="https://res.cloudinary.com/dl7hgexkl/image/upload/v1780421551/sulthan-auliya-XykW1VgvTa4-unsplash_1_akdekv.jpg" 
             alt="Mecca Background" 
             className="w-full h-full object-cover"
           />
         </div>
         
-        <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
+        <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white flex flex-col items-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -132,47 +166,161 @@ export function Home() {
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.2, duration: 0.5 }}
-              className="inline-block px-6 py-2 rounded-full bg-white/20 backdrop-blur-md text-base font-bold mb-8 border border-white/30 shadow-lg"
+              className="inline-block px-5 py-2 rounded-full bg-white/20 backdrop-blur-md text-sm md:text-base font-bold mb-6 border border-white/30 shadow-lg"
             >
-              بوابتك نحو العالم
+              بوابتك نحو العالم، رحلتك الإيمانية تبدأ هنا
             </motion.span>
             <motion.h1 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4, duration: 0.6 }}
-              className="text-4xl md:text-6xl lg:text-7xl font-black mb-6 md:mb-8 leading-[1.3] md:leading-[1.2] drop-shadow-2xl"
+              className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-sans font-black mb-6 leading-[1.3] md:leading-[1.2] drop-shadow-2xl text-white"
             >
-               بوابتك نحو العالم، رحلتك الإيمانية تبدأ هنا
+               رحلتك الإيمانية والسياحية تبدأ بضغطة زر
             </motion.h1>
             <motion.p 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6, duration: 0.6 }}
-              className="text-lg md:text-2xl text-slate-100 mb-8 md:mb-12 leading-relaxed drop-shadow-lg font-medium max-w-3xl mx-auto px-2"
+              className="text-base sm:text-lg md:text-xl text-slate-200 mb-8 max-w-3xl mx-auto leading-relaxed drop-shadow-lg font-medium px-4"
             >
               نقدم لكم أرقى خدمات السفر والعمرة باحترافية عالية، لتستمتعوا برحلة مريحة وروحانية تدوم ذكراها.
             </motion.p>
-            
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8, duration: 0.6 }}
-              className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 mt-8"
-            >
+          </motion.div>
+
+          {/* Premium Tabbed Search Engine Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7, duration: 0.8 }}
+            className="w-full max-w-4xl mt-4 sm:mt-6 px-1 sm:px-4"
+          >
+            <div className="bg-white/95 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/20 p-5 sm:p-7 text-right text-slate-800">
+              {/* Tabs list */}
+              <div className="flex gap-2 mb-6 border-b border-slate-100 pb-4 overflow-x-auto select-none no-scrollbar">
+                <button
+                  type="button"
+                  onClick={() => setSearchTab('umrah')}
+                  className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-bold text-sm sm:text-base transition-all whitespace-nowrap cursor-pointer ${
+                    searchTab === 'umrah'
+                      ? 'bg-secondary text-white shadow-md'
+                      : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  <Star className="w-4 h-4 shrink-0" />
+                  باقات العمرة
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSearchTab('hotels')}
+                  className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-bold text-sm sm:text-base transition-all whitespace-nowrap cursor-pointer ${
+                    searchTab === 'hotels'
+                      ? 'bg-secondary text-white shadow-md'
+                      : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  <Building className="w-4 h-4 shrink-0" />
+                  الفنادق
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSearchTab('flights')}
+                  className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-bold text-sm sm:text-base transition-all whitespace-nowrap cursor-pointer ${
+                    searchTab === 'flights'
+                      ? 'bg-secondary text-white shadow-md'
+                      : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  <Plane className="w-4 h-4 shrink-0" />
+                  تذاكر الطيران
+                </button>
+              </div>
+
+              {/* Form Input elements */}
+              <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                {/* Search Text field */}
+                <div className="md:col-span-5 space-y-2 text-right">
+                  <label className="block text-xs sm:text-sm font-bold text-slate-600 pr-1">أين تريد الذهاب؟</label>
+                  <div className="relative">
+                    <MapPin className="absolute right-4 top-3.5 text-slate-400 w-5 h-5 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder={
+                        searchTab === 'umrah' 
+                          ? "مثال: عمرة رمضان، الباقة المميزة..." 
+                          : searchTab === 'hotels'
+                            ? "مثال: فندق مكة، المدينة..."
+                            : "مثال: رحلة الدار البيضاء، جدة..."
+                      }
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 pr-11 pl-4 text-sm sm:text-base text-slate-800 placeholder:text-slate-400 font-bold focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Date Input */}
+                <div className="md:col-span-3 space-y-2 text-right">
+                  <label className="block text-xs sm:text-sm font-bold text-slate-600 pr-1">تاريخ السفر المقدر</label>
+                  <div className="relative">
+                    <Clock className="absolute right-4 top-3.5 text-slate-400 w-5 h-5 pointer-events-none" />
+                    <input
+                      type="date"
+                      value={travelDate}
+                      onChange={(e) => setTravelDate(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 pr-11 pl-4 text-sm sm:text-base text-slate-800 font-bold focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Travelers dropdown */}
+                <div className="md:col-span-2 space-y-2 text-right">
+                  <label className="block text-xs sm:text-sm font-bold text-slate-600 pr-1">المسافرين</label>
+                  <div className="relative">
+                    <Users className="absolute right-4 top-3.5 text-slate-400 w-5 h-5 pointer-events-none" />
+                    <select
+                      value={travelers}
+                      onChange={(e) => setTravelers(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 pr-11 pl-4 text-sm sm:text-base text-slate-800 font-bold focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all appearance-none cursor-pointer"
+                    >
+                      <option value="1">1 فرد</option>
+                      <option value="2">2 فرد</option>
+                      <option value="3">3 أفراد</option>
+                      <option value="4">4 أفراد</option>
+                      <option value="5+">5+ أفراد</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Action button */}
+                <div className="md:col-span-2">
+                  <button
+                    type="submit"
+                    className="w-full bg-primary hover:bg-primary-dark text-white font-bold text-base py-3.5 px-6 rounded-2xl shadow-lg hover:shadow-primary/30 transition-all flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                  >
+                    ابحث
+                    <ArrowLeft className="w-5 h-5" />
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Float quick actions */}
+            <div className="flex flex-row justify-center md:justify-start items-center gap-4 mt-6">
               <Link 
                 to="/umrah" 
-                className="bg-secondary hover:bg-secondary-light text-white px-6 md:px-8 py-3.5 md:py-4 rounded-full text-lg md:text-xl font-bold transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(243,112,33,0.4)] flex items-center gap-3 w-full sm:w-auto justify-center"
+                className="bg-secondary/95 hover:bg-secondary text-white px-6 py-3 rounded-full font-bold text-sm sm:text-base transition-all flex items-center gap-2 shadow-lg hover:shadow-secondary/30 hover:scale-105"
               >
                 تصفح باقات العمرة
-                <ArrowLeft className="w-5 h-5 md:w-6 md:h-6" />
+                <ArrowLeft className="w-4 h-4" />
               </Link>
               <Link 
                 to="/services" 
-                className="bg-white hover:bg-slate-50 text-primary px-6 md:px-8 py-3.5 md:py-4 rounded-full text-lg md:text-xl font-bold transition-all hover:scale-105 shadow-xl w-full sm:w-auto justify-center"
+                className="bg-white/10 hover:bg-white/20 border border-white/20 text-white px-6 py-3 rounded-full font-bold text-sm sm:text-base transition-all hover:scale-105"
               >
                 خدماتنا السياحية
               </Link>
-            </motion.div>
+            </div>
           </motion.div>
         </div>
       </section>

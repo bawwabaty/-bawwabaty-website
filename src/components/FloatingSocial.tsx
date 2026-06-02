@@ -18,7 +18,7 @@ export function FloatingSocial() {
 
       {/* Instagram */}
       <a
-        href="https://instagram.com"
+        href="https://www.instagram.com/bawwabaty_travel/"
         target="_blank"
         rel="noopener noreferrer"
         className="w-14 h-14 text-white rounded-full shadow-lg hover:shadow-xl hover:-translate-y-1 hover:scale-110 transition-all duration-300 flex items-center justify-center relative group"
@@ -32,7 +32,7 @@ export function FloatingSocial() {
 
       {/* Facebook */}
       <a
-        href="https://facebook.com"
+        href="https://web.facebook.com/p/%D8%A8%D9%88%D8%A7%D8%A8%D8%AA%D9%8I-%D9%84%D9%84%D8%B3%D9%8A%D8%A7%D8%AD%D9%8A-%D9%88-%D8%A7%D9%84%D8%B3%D9%81%D8%B1-61570841673325/?_rdc=1&_rdr#"
         target="_blank"
         rel="noopener noreferrer"
         className="w-14 h-14 bg-[#1877F2] text-white rounded-full shadow-lg hover:shadow-xl hover:-translate-y-1 hover:scale-110 transition-all duration-300 flex items-center justify-center relative group"

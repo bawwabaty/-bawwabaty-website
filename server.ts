@@ -155,6 +155,61 @@ app.post("/api/trips", (req, res) => {
   res.json(trip);
 });
 
+app.post("/api/trips/sync", (req, res) => {
+  const db = loadDb();
+  const pkg = req.body;
+  if (!db.trips) db.trips = [];
+  
+  // Find trip referencing this package_id OR matching destination name
+  let trip = db.trips.find((t: any) => !t.deleted && (t.package_id === pkg.id || t.destination === pkg.name));
+  
+  if (trip) {
+    // Update existing trip in-place without changing its ID, preventing PNR references from breaking
+    trip.destination = pkg.name;
+    trip.capacity = parseInt(pkg.capacity) || trip.capacity || 50;
+    trip.default_price = parseFloat(pkg.minPrice) || trip.default_price || 0;
+    trip.image = pkg.image || trip.image;
+    trip.package_id = pkg.id;
+    logAudit(db, "UPDATE", "TRIP", trip.id, `Synced from package ${pkg.id}`);
+  } else {
+    // Create new trip linked to the package
+    const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const today = new Date();
+    const endDate = new Date(today);
+    endDate.setDate(today.getDate() + 14);
+    
+    trip = {
+      id: getNextId(db.trips),
+      code: `PKG-${today.getFullYear()}-${randomStr}`,
+      destination: pkg.name,
+      capacity: parseInt(pkg.capacity) || 50,
+      default_price: parseFloat(pkg.minPrice) || 0,
+      start_date: today.toISOString().split('T')[0],
+      end_date: endDate.toISOString().split('T')[0],
+      image: pkg.image || '',
+      package_id: pkg.id,
+      deleted: false
+    };
+    db.trips.push(trip);
+    logAudit(db, "CREATE", "TRIP", trip.id, `Created from package sync ${pkg.id}`);
+  }
+  
+  saveDb(db);
+  res.json(trip);
+});
+
+app.delete("/api/trips/sync/:packageId", (req, res) => {
+  const db = loadDb();
+  const packageId = req.params.packageId;
+  const trip = db.trips.find((t: any) => t.package_id === packageId && !t.deleted);
+  if (trip) {
+    trip.deleted = true;
+    logAudit(db, "DELETE", "TRIP", trip.id, `Deleted due to package deletion ${packageId}`);
+    saveDb(db);
+  }
+  res.json({ success: true });
+});
+
 app.get("/api/trips/:id", (req, res) => {
   const db = loadDb();
   const trip = db.trips.find((t: any) => t.id == req.params.id && !t.deleted);
