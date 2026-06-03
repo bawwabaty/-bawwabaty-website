@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Reservation, Trip } from "../../erp-types";
-import { CreditCard, Plus, Plane, Users, CheckCircle, Clock, AlertTriangle, XCircle, Home } from "lucide-react";
+import { CreditCard, Plus, Plane, Users, CheckCircle, Clock, AlertTriangle, XCircle, Home, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../lib/firebase";
@@ -140,7 +140,14 @@ export function Reservations() {
          <form onSubmit={handleAdd} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
            <div className="space-y-1">
              <label className="text-xs font-bold text-slate-500">اسم العميل *</label>
-             <input required type="text" placeholder="اسم العميل" value={form.client_name} onChange={e => setForm({...form, client_name: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+             <div className="relative">
+               <input required type="text" placeholder="اسم العميل" value={form.client_name} onChange={e => setForm({...form, client_name: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 pr-9 text-sm focus:outline-none focus:border-primary" />
+               {form.client_name && (
+                 <button type="button" onClick={() => setForm({...form, client_name: ''})} className="absolute right-2 top-2.5 text-slate-400 hover:text-rose-500 cursor-pointer">
+                   <X className="w-4 h-4" />
+                 </button>
+               )}
+             </div>
            </div>
            
            <div className="space-y-1">

@@ -57,6 +57,47 @@ const servicesList = [
   }
 ];
 
+const CustomSelect = ({ value, onChange, options, placeholder }: { value: string, onChange: (v: string) => void, options: {value: string, label: string}[], placeholder: string }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative w-full" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 px-0 text-center text-xs sm:text-sm text-slate-800 font-bold focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all flex items-center justify-center cursor-pointer"
+        dir="rtl"
+      >
+        <span className="truncate px-1">{value ? options.find(o => o.value === value)?.label : placeholder}</span>
+      </button>
+      {open && (
+        <ul className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 max-h-[144px] overflow-y-auto py-1 custom-scrollbar">
+          {options.map((opt) => (
+            <li
+              key={opt.value}
+              onMouseDown={() => { onChange(opt.value); setOpen(false); }}
+              className={`px-2 py-2 text-sm text-center cursor-pointer font-bold ${value === opt.value ? 'bg-primary/10 text-primary' : 'text-slate-700 hover:bg-slate-100'}`}
+            >
+              {opt.label}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+};
+
 export function Home() {
   useDocumentTitle('الرئيسية');
   const navigate = useNavigate();
@@ -259,47 +300,44 @@ export function Home() {
                 </div>
 
                 {/* Date Input */}
-                <div className="md:col-span-3 space-y-2 text-right">
+                <div className="md:col-span-3 space-y-2 text-right z-30">
                   <label className="block text-xs sm:text-sm font-bold text-slate-600 pr-1">تاريخ السفر المقدر</label>
-                  <div className="flex gap-2 relative z-20">
+                  <div className="flex gap-2">
                     {/* Day */}
-                    <div className="relative w-1/3">
-                      <select
+                    <div className="w-1/3">
+                      <CustomSelect
                         value={day}
-                        onChange={(e) => setDay(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 px-0 text-center text-xs sm:text-sm text-slate-800 font-bold focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all appearance-none cursor-pointer"
-                      >
-                        <option value="" disabled>اليوم</option>
-                        {[...Array(31)].map((_, i) => (
-                          <option key={i+1} value={String(i+1).padStart(2, '0')}>{i+1}</option>
-                        ))}
-                      </select>
+                        onChange={setDay}
+                        options={[...Array(31)].map((_, i) => {
+                          const val = String(i+1).padStart(2, '0');
+                          return { value: val, label: val };
+                        })}
+                        placeholder="اليوم"
+                      />
                     </div>
                     {/* Month */}
-                    <div className="relative w-1/3">
-                      <select
+                    <div className="w-1/3">
+                      <CustomSelect
                         value={month}
-                        onChange={(e) => setMonth(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 px-0 text-center text-xs sm:text-sm text-slate-800 font-bold focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all appearance-none cursor-pointer"
-                      >
-                        <option value="" disabled>الشهر</option>
-                        {[...Array(12)].map((_, i) => (
-                          <option key={i+1} value={String(i+1).padStart(2, '0')}>{i+1}</option>
-                        ))}
-                      </select>
+                        onChange={setMonth}
+                        options={[...Array(12)].map((_, i) => {
+                          const val = String(i+1).padStart(2, '0');
+                          return { value: val, label: val };
+                        })}
+                        placeholder="الشهر"
+                      />
                     </div>
                     {/* Year */}
-                    <div className="relative w-1/3">
-                      <select
+                    <div className="w-1/3">
+                      <CustomSelect
                         value={year}
-                        onChange={(e) => setYear(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 px-0 text-center text-xs sm:text-sm text-slate-800 font-bold focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all appearance-none cursor-pointer"
-                      >
-                        <option value="" disabled>السنة</option>
-                        {[currentYear, currentYear+1, currentYear+2].map(y => (
-                          <option key={y} value={y}>{y}</option>
-                        ))}
-                      </select>
+                        onChange={setYear}
+                        options={[currentYear, currentYear+1, currentYear+2].map(y => ({
+                          value: String(y),
+                          label: String(y)
+                        }))}
+                        placeholder="السنة"
+                      />
                     </div>
                   </div>
                 </div>

@@ -29,21 +29,28 @@ try {
 
 // Helper to load DB
 function loadDb() {
+  const initialDb = {
+    trips: [],
+    clients: [],
+    reservations: [],
+    expenses: [],
+    payments: [],
+    cash_journal: [],
+    audit_logs: []
+  };
+
   if (!fs.existsSync(DB_PATH)) {
-    const initialDb = {
-      trips: [],
-      clients: [],
-      reservations: [],
-      expenses: [],
-      payments: [],
-      cash_journal: [],
-      audit_logs: []
-    };
     saveDb(initialDb);
     return initialDb;
   }
-  const data = fs.readFileSync(DB_PATH, "utf-8");
-  return JSON.parse(data);
+  try {
+    const data = fs.readFileSync(DB_PATH, "utf-8");
+    const parsed = JSON.parse(data);
+    return { ...initialDb, ...parsed };
+  } catch (err) {
+    console.error("Error reading DB:", err);
+    return initialDb;
+  }
 }
 
 // Helper to save DB with automated Cloud Backup
