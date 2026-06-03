@@ -7,11 +7,16 @@ import { initializeApp } from "firebase/app";
 import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 const PORT = 3000;
 
-const DB_PATH = path.join(process.cwd(), "travel-erp-v2.json");
+const isProd = process.env.NODE_ENV === "production" || process.env.NODE_ENV === "preview";
+const DB_PATH = isProd ? path.join("/tmp", "travel-erp-v2.json") : path.join(process.cwd(), "travel-erp-v2.json");
 
 // Initialize Firebase for Cloud Backup
 let firestoreDb: any = null;
@@ -56,7 +61,11 @@ function loadDb() {
 // Helper to save DB with automated Cloud Backup
 function saveDb(data: any) {
   const stringified = JSON.stringify(data, null, 2);
-  fs.writeFileSync(DB_PATH, stringified);
+  try {
+    fs.writeFileSync(DB_PATH, stringified);
+  } catch (error) {
+    console.error(`Failed to write local database to ${DB_PATH}:`, error);
+  }
   if (firestoreDb) {
     const docRef = doc(firestoreDb, "backups", "current");
     setDoc(docRef, { dbContent: stringified, updatedAt: new Date().toISOString() })
@@ -120,33 +129,39 @@ app.get("/api/dashboard", (req, res) => {
 });
 
 app.get("/api/trips", (req, res) => {
-  const db = loadDb();
-  const trips = db.trips.filter((t: any) => !t.deleted).map((trip: any) => {
-    // Dynamic calculations
-    const resvs = db.reservations.filter((r: any) => r.trip_id == trip.id && !r.deleted && r.status !== 'Annulée-Restituée');
-    const booked_seats = resvs.reduce((sum: number, r: any) => sum + (parseInt(r.seats) || 1), 0);
-    const capacity = parseInt(trip.capacity) || 0;
-    const remaining_seats = capacity - booked_seats;
-    
-    // Revenue from reservations
-    const reservations_revenue = resvs.reduce((sum: number, r: any) => sum + (parseFloat(r.agreed_price) || 0), 0);
-    
-    // Expenses
-    const trip_expenses = db.expenses.filter((e: any) => e.trip_id == trip.id && !e.deleted)
-      .reduce((sum: number, e: any) => sum + (parseFloat(e.amount) || 0), 0);
+  try {
+    const db = loadDb();
+    if (!db.trips) db.trips = [];
+    const trips = db.trips.filter((t: any) => !t.deleted).map((trip: any) => {
+      // Dynamic calculations
+      const resvs = (db.reservations || []).filter((r: any) => r.trip_id == trip.id && !r.deleted && r.status !== 'Annulée-Restituée');
+      const booked_seats = resvs.reduce((sum: number, r: any) => sum + (parseInt(r.seats) || 1), 0);
+      const capacity = parseInt(trip.capacity) || 0;
+      const remaining_seats = capacity - booked_seats;
       
-    const net_profit = reservations_revenue - trip_expenses;
-    
-    return {
-      ...trip,
-      booked_seats,
-      remaining_seats,
-      reservations_revenue,
-      trip_expenses,
-      net_profit
-    };
-  });
-  res.json(trips);
+      // Revenue from reservations
+      const reservations_revenue = resvs.reduce((sum: number, r: any) => sum + (parseFloat(r.agreed_price) || 0), 0);
+      
+      // Expenses
+      const trip_expenses = (db.expenses || []).filter((e: any) => e.trip_id == trip.id && !e.deleted)
+        .reduce((sum: number, e: any) => sum + (parseFloat(e.amount) || 0), 0);
+        
+      const net_profit = reservations_revenue - trip_expenses;
+      
+      return {
+        ...trip,
+        booked_seats,
+        remaining_seats,
+        reservations_revenue,
+        trip_expenses,
+        net_profit
+      };
+    });
+    res.json(trips);
+  } catch (error: any) {
+    console.error("GET TRIPS ERROR:", error);
+    res.status(500).json({ error: "Failed to fetch trips", details: error.message });
+  }
 });
 
 app.post("/api/trips", (req, res) => {
@@ -163,46 +178,51 @@ app.post("/api/trips", (req, res) => {
 });
 
 app.post("/api/trips/sync", (req, res) => {
-  const db = loadDb();
-  const pkg = req.body;
-  if (!db.trips) db.trips = [];
-  
-  // Find trip referencing this package_id OR matching destination name
-  let trip = db.trips.find((t: any) => !t.deleted && (t.package_id === pkg.id || t.destination === pkg.name));
-  
-  if (trip) {
-    // Update existing trip in-place without changing its ID, preventing PNR references from breaking
-    trip.destination = pkg.name;
-    trip.capacity = parseInt(pkg.capacity) || trip.capacity || 50;
-    trip.default_price = parseFloat(pkg.minPrice) || trip.default_price || 0;
-    trip.image = pkg.image || trip.image;
-    trip.package_id = pkg.id;
-    logAudit(db, "UPDATE", "TRIP", trip.id, `Synced from package ${pkg.id}`);
-  } else {
-    // Create new trip linked to the package
-    const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase();
-    const today = new Date();
-    const endDate = new Date(today);
-    endDate.setDate(today.getDate() + 14);
+  try {
+    const db = loadDb();
+    const pkg = req.body;
+    if (!db.trips) db.trips = [];
     
-    trip = {
-      id: getNextId(db.trips),
-      code: `PKG-${today.getFullYear()}-${randomStr}`,
-      destination: pkg.name,
-      capacity: parseInt(pkg.capacity) || 50,
-      default_price: parseFloat(pkg.minPrice) || 0,
-      start_date: today.toISOString().split('T')[0],
-      end_date: endDate.toISOString().split('T')[0],
-      image: pkg.image || '',
-      package_id: pkg.id,
-      deleted: false
-    };
-    db.trips.push(trip);
-    logAudit(db, "CREATE", "TRIP", trip.id, `Created from package sync ${pkg.id}`);
+    // Find trip referencing this package_id OR matching destination name
+    let trip = db.trips.find((t: any) => !t.deleted && (t.package_id === pkg.id || t.destination === pkg.name));
+    
+    if (trip) {
+      // Update existing trip in-place without changing its ID, preventing PNR references from breaking
+      trip.destination = pkg.name;
+      trip.capacity = parseInt(pkg.capacity) || trip.capacity || 50;
+      trip.default_price = parseFloat(pkg.minPrice) || trip.default_price || 0;
+      trip.image = pkg.image || trip.image;
+      trip.package_id = pkg.id;
+      logAudit(db, "UPDATE", "TRIP", trip.id, `Synced from package ${pkg.id}`);
+    } else {
+      // Create new trip linked to the package
+      const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase();
+      const today = new Date();
+      const endDate = new Date(today);
+      endDate.setDate(today.getDate() + 14);
+      
+      trip = {
+        id: getNextId(db.trips),
+        code: `PKG-${today.getFullYear()}-${randomStr}`,
+        destination: pkg.name,
+        capacity: parseInt(pkg.capacity) || 50,
+        default_price: parseFloat(pkg.minPrice) || 0,
+        start_date: today.toISOString().split('T')[0],
+        end_date: endDate.toISOString().split('T')[0],
+        image: pkg.image || '',
+        package_id: pkg.id,
+        deleted: false
+      };
+      db.trips.push(trip);
+      logAudit(db, "CREATE", "TRIP", trip.id, `Created from package sync ${pkg.id}`);
+    }
+    
+    saveDb(db);
+    res.json(trip);
+  } catch (error: any) {
+    console.error("SYNC_ERROR_DETAILS:", error);
+    res.status(500).json({ message: "Sync failed", details: error.message || String(error) });
   }
-  
-  saveDb(db);
-  res.json(trip);
 });
 
 app.delete("/api/trips/sync/:packageId", (req, res) => {

@@ -30,6 +30,10 @@ export function Trips() {
     try {
       // 1. Load ERP Trips
       const resTrips = await fetch("/api/trips");
+      if (!resTrips.ok) {
+        const errorText = await resTrips.text();
+        throw new Error(`Failed to load ERP trips (${resTrips.status}): ${errorText}`);
+      }
       const erpTrips: Trip[] = await resTrips.json();
 
       // 2. Load Firestore Packages
@@ -43,27 +47,37 @@ export function Trips() {
         return !matchingTrip || matchingTrip.destination !== pkg.name; // Keep it simple
       });
 
-      // 4. Sync each missing/updated package
-      for (const pkg of tripsToSync) {
-        await fetch("/api/trips/sync", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id: pkg.id,
-            name: (pkg as any).name,
-            capacity: (pkg as any).capacity || 50,
-            minPrice: getMinPrice(pkg),
-            image: (pkg as any).image || ''
-          })
-        });
-      }
+      // 4. Sync each missing/updated package concurrently to avoid timeouts
+      await Promise.all(tripsToSync.map(async (pkg: any) => {
+        try {
+          const syncRes = await fetch("/api/trips/sync", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: pkg.id,
+              name: pkg.name,
+              capacity: pkg.capacity || 50,
+              minPrice: getMinPrice(pkg),
+              image: pkg.image || ''
+            })
+          });
+          if (!syncRes.ok) {
+            const errData = await syncRes.text();
+            console.error("Sync failed for package", pkg.id, errData);
+          }
+        } catch (syncErr) {
+          console.error("Network or timeout error syncing package", pkg.id, syncErr);
+        }
+      }));
 
       // 5. Refetch ERP Trips
       const finalRes = await fetch("/api/trips");
+      if (!finalRes.ok) throw new Error("Failed to refetch trips");
       const finalTrips = await finalRes.json();
       setTrips(finalTrips);
-    } catch (err) {
-      toast.error('حدث خطأ أثناء مزامنة وتحميل البيانات');
+    } catch (err: any) {
+      console.error("SYNC_ERROR_DETAILS:", err);
+      toast.error('حدث خطأ أثناء مزامنة وتحميل البيانات: ' + (err.message || 'خطأ مجهول'));
     } finally {
       setAutoSyncing(false);
     }
