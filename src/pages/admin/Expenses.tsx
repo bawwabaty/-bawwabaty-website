@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Expense, Trip } from "../../erp-types";
 import { Receipt, Plane, ArrowRight, DollarSign, Wallet, CheckSquare, Square } from "lucide-react";
 import toast from "react-hot-toast";
+import { getApiUrl } from "../../lib/api";
 
 export function Expenses() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -16,8 +17,8 @@ export function Expenses() {
     fetchTrips();
   }, []);
 
-  const fetchExpenses = () => fetch("/api/expenses").then(r => r.json()).then(setExpenses).catch(console.error);
-  const fetchTrips = () => fetch("/api/trips").then(r => r.json()).then(setTrips).catch(console.error);
+  const fetchExpenses = () => fetch(getApiUrl("/api/expenses")).then(r => r.json()).then(setExpenses).catch(console.error);
+  const fetchTrips = () => fetch(getApiUrl("/api/trips")).then(r => r.json()).then(setTrips).catch(console.error);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +27,7 @@ export function Expenses() {
       return;
     }
     try {
-      const res = await fetch("/api/expenses", {
+      const res = await fetch(getApiUrl("/api/expenses"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({...form, trip_id: form.type === 'Fixe' ? null : form.trip_id })

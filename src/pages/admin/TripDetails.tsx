@@ -5,6 +5,7 @@ import { Trip, Reservation, Expense } from "../../erp-types";
 import toast from "react-hot-toast";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../../lib/firebase";
+import { getApiUrl } from "../../lib/api";
 
 export function TripDetails() {
   const { id } = useParams();
@@ -14,7 +15,7 @@ export function TripDetails() {
   const [activeTab, setActiveTab] = useState<'reservations' | 'expenses' | 'rooming'>('reservations');
 
   useEffect(() => {
-    fetch(`/api/trips/${id}`)
+    fetch(getApiUrl(`/api/trips/${id}`))
       .then(r => r.json())
       .then(data => {
         setTrip(data);
@@ -169,7 +170,7 @@ export function TripDetails() {
           {activeTab === 'rooming' && (
             <RoomingList reservations={reservations} tripName={trip.destination} tripCode={trip.code} onSave={async (updates) => {
               for (const u of updates) {
-                await fetch(`/api/reservations/${u.id}/status`, { // Mock endpoint to save notes or update it
+                await fetch(getApiUrl(`/api/reservations/${u.id}/status`), { // Mock endpoint to save notes or update it
                    method: 'PUT',
                    headers: {'Content-Type': 'application/json'},
                    body: JSON.stringify(u)

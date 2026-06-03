@@ -4,6 +4,7 @@ import { CreditCard, Plus, Plane, Users, CheckCircle, Clock, AlertTriangle, XCir
 import toast from "react-hot-toast";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../lib/firebase";
+import { getApiUrl } from "../../lib/api";
 
 export function Reservations() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
@@ -21,10 +22,10 @@ export function Reservations() {
   }, []);
 
   const fetchData = () => {
-    fetch("/api/reservations").then(r => r.json()).then(setReservations).catch(console.error);
+    fetch(getApiUrl("/api/reservations")).then(r => r.json()).then(setReservations).catch(console.error);
   };
   
-  const fetchTrips = () => Object.assign([], fetch("/api/trips").then(r => r.json()).then(setTrips).catch(console.error));
+  const fetchTrips = () => Object.assign([], fetch(getApiUrl("/api/trips")).then(r => r.json()).then(setTrips).catch(console.error));
 
   const fetchPackages = async () => {
     try {
@@ -66,7 +67,7 @@ export function Reservations() {
     }
 
     try {
-      const res = await fetch("/api/reservations", {
+      const res = await fetch(getApiUrl("/api/reservations"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form)
@@ -84,7 +85,7 @@ export function Reservations() {
 
   const updateStatus = async (id: number, newStatus: string) => {
     try {
-      const res = await fetch(`/api/reservations/${id}/status`, {
+      const res = await fetch(getApiUrl(`/api/reservations/${id}/status`), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus })

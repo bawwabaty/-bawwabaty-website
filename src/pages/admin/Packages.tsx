@@ -3,6 +3,7 @@ import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp
 import { db } from '../../lib/firebase';
 import { Plus, Edit2, Trash2, X, Save, Image as ImageIcon, PlusCircle, Trash, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { getApiUrl } from '../../lib/api';
 
 const ROOM_TYPES = ['ثنائي', 'ثلاثي', 'رباعي', 'خماسي', 'سداسي'];
 
@@ -96,7 +97,7 @@ export function AdminPackages() {
 
       // Sync every package reliably
       for (const pkg of packages) {
-        await fetch("/api/trips/sync", {
+        await fetch(getApiUrl("/api/trips/sync"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -133,7 +134,7 @@ export function AdminPackages() {
 
         // Sync update to ERP in-place
         try {
-          await fetch("/api/trips/sync", {
+          await fetch(getApiUrl("/api/trips/sync"), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -156,7 +157,7 @@ export function AdminPackages() {
         
         // Sync creation to ERP automatically
         try {
-          await fetch("/api/trips/sync", {
+          await fetch(getApiUrl("/api/trips/sync"), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -191,7 +192,7 @@ export function AdminPackages() {
 
       // Call sync delete to hide the corresponding trip in ERP
       try {
-        await fetch(`/api/trips/sync/${id}`, {
+        await fetch(getApiUrl(`/api/trips/sync/${id}`), {
           method: "DELETE"
         });
       } catch (delError) {
