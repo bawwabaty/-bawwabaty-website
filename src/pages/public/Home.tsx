@@ -63,8 +63,12 @@ export function Home() {
   const [featuredPackages, setFeaturedPackages] = useState<any[]>([]);
   const [searchTab, setSearchTab] = useState<'umrah' | 'hotels' | 'flights'>('umrah');
   const [searchQuery, setSearchQuery] = useState('');
-  const [travelDate, setTravelDate] = useState('');
+  const [day, setDay] = useState('');
+  const [month, setMonth] = useState('');
+  const [year, setYear] = useState('');
   const [travelers, setTravelers] = useState('1');
+
+  const currentYear = new Date().getFullYear();
 
   useEffect(() => {
     const fetchFeatured = async () => {
@@ -126,11 +130,12 @@ export function Home() {
     if (searchType === 'umrah') {
       navigate('/umrah');
     } else {
+      const travelDateStr = day && month && year ? `${year}/${month}/${day}` : 'غير محدد';
       const serviceName = searchType === 'hotels' ? 'حجز الفنادق والإقامة' : 'حجز تذاكر الطيران';
       const text = `السلام عليكم ورحمة الله، أود الاستفسار عن خدمة (${serviceName}).
       
 - الوجهة المطلوبة: ${searchQuery || 'طلب مباشر'}
-- تاريخ السفر المتوقع: ${travelDate || 'غير محدد'}
+- تاريخ السفر المتوقع: ${travelDateStr}
 - عدد المسافرين: ${travelers} مسافر
 شكراً لكم.`;
 
@@ -142,7 +147,7 @@ export function Home() {
   return (
     <div className="relative">
       {/* Hero Section */}
-      <section className="relative min-h-[92vh] sm:min-h-screen flex items-center justify-center overflow-hidden pt-36 pb-20">
+      <section className="relative min-h-[100svh] sm:min-h-screen flex items-center justify-center overflow-hidden pt-28 pb-16 sm:pt-36 sm:pb-20">
         <div className="absolute inset-0 w-full h-full">
           <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/55 to-slate-900/40 z-10" />
           <motion.img 
@@ -160,7 +165,7 @@ export function Home() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
-            className="max-w-4xl mx-auto"
+            className="max-w-4xl mx-auto mt-8 sm:mt-0"
           >
             <motion.span 
               initial={{ opacity: 0, scale: 0.8 }}
@@ -170,22 +175,16 @@ export function Home() {
             >
               بوابتك نحو العالم، رحلتك الإيمانية تبدأ هنا
             </motion.span>
-            <motion.h1 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.6 }}
-              className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-sans font-black mb-6 leading-[1.3] md:leading-[1.2] drop-shadow-2xl text-white"
+              <h1 
+              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-sans font-black mb-4 sm:mb-6 leading-[1.3] md:leading-[1.2] drop-shadow-2xl text-white"
             >
                رحلتك الإيمانية والسياحية تبدأ بضغطة زر
-            </motion.h1>
-            <motion.p 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6, duration: 0.6 }}
-              className="text-base sm:text-lg md:text-xl text-slate-200 mb-8 max-w-3xl mx-auto leading-relaxed drop-shadow-lg font-medium px-4"
+            </h1>
+            <p 
+              className="text-base sm:text-lg md:text-xl text-slate-200 mb-6 sm:mb-8 max-w-3xl mx-auto leading-relaxed drop-shadow-lg font-medium px-2 sm:px-4"
             >
               نقدم لكم أرقى خدمات السفر والعمرة باحترافية عالية، لتستمتعوا برحلة مريحة وروحانية تدوم ذكراها.
-            </motion.p>
+            </p>
           </motion.div>
 
           {/* Premium Tabbed Search Engine Card */}
@@ -262,14 +261,46 @@ export function Home() {
                 {/* Date Input */}
                 <div className="md:col-span-3 space-y-2 text-right">
                   <label className="block text-xs sm:text-sm font-bold text-slate-600 pr-1">تاريخ السفر المقدر</label>
-                  <div className="relative">
-                    <Clock className="absolute right-4 top-3.5 text-slate-400 w-5 h-5 pointer-events-none" />
-                    <input
-                      type="date"
-                      value={travelDate}
-                      onChange={(e) => setTravelDate(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 pr-11 pl-4 text-sm sm:text-base text-slate-800 font-bold focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                    />
+                  <div className="flex gap-2 relative z-20">
+                    {/* Day */}
+                    <div className="relative w-1/3">
+                      <select
+                        value={day}
+                        onChange={(e) => setDay(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 px-0 text-center text-xs sm:text-sm text-slate-800 font-bold focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all appearance-none cursor-pointer"
+                      >
+                        <option value="" disabled>اليوم</option>
+                        {[...Array(31)].map((_, i) => (
+                          <option key={i+1} value={String(i+1).padStart(2, '0')}>{i+1}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {/* Month */}
+                    <div className="relative w-1/3">
+                      <select
+                        value={month}
+                        onChange={(e) => setMonth(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 px-0 text-center text-xs sm:text-sm text-slate-800 font-bold focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all appearance-none cursor-pointer"
+                      >
+                        <option value="" disabled>الشهر</option>
+                        {[...Array(12)].map((_, i) => (
+                          <option key={i+1} value={String(i+1).padStart(2, '0')}>{i+1}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {/* Year */}
+                    <div className="relative w-1/3">
+                      <select
+                        value={year}
+                        onChange={(e) => setYear(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 px-0 text-center text-xs sm:text-sm text-slate-800 font-bold focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all appearance-none cursor-pointer"
+                      >
+                        <option value="" disabled>السنة</option>
+                        {[currentYear, currentYear+1, currentYear+2].map(y => (
+                          <option key={y} value={y}>{y}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                 </div>
 

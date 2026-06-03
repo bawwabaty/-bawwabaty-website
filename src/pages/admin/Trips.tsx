@@ -3,61 +3,69 @@ import { Plane, Calendar, Users, DollarSign, Calculator, ArrowLeft, ArrowUpRight
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Trip } from "../../erp-types";
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 
 export function Trips() {
   const [trips, setTrips] = useState<Trip[]>([]);
-  const [simForm, setSimForm] = useState({ expenses: '', margin: '' });
-  const [simResult, setSimResult] = useState<any>(null);
-  const [loadingSim, setLoadingSim] = useState(false);
-  
-  const [tripForm, setTripForm] = useState({
-    code: '', destination: '', capacity: '', default_price: '', start_date: '', end_date: ''
-  });
+  const [autoSyncing, setAutoSyncing] = useState(true);
 
   useEffect(() => {
-    fetchTrips();
+    initializeAndSyncTrips();
   }, []);
 
-  const fetchTrips = () => {
-    fetch("/api/trips")
-      .then(r => r.json())
-      .then(setTrips)
-      .catch(console.error);
+  const getMinPrice = (pkg: any) => {
+    if (!pkg.programs || pkg.programs.length === 0) return 0;
+    let min = Infinity;
+    pkg.programs.forEach((p: any) => {
+      Object.values(p.prices || {}).forEach((price: any) => {
+        if (price > 0 && price < min) min = price;
+      });
+    });
+    return min === Infinity ? 0 : min;
   };
 
-  const handleSimulate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoadingSim(true);
+  const initializeAndSyncTrips = async () => {
+    setAutoSyncing(true);
     try {
-      const res = await fetch("/api/trips/calculate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ expected_expenses: simForm.expenses, profit_margin: simForm.margin })
-      });
-      const data = await res.json();
-      setSimResult(data);
-    } catch {
-      toast.error('حدث خطأ أثناء الحساب');
-    } finally {
-      setLoadingSim(false);
-    }
-  };
+      // 1. Load ERP Trips
+      const resTrips = await fetch("/api/trips");
+      const erpTrips: Trip[] = await resTrips.json();
 
-  const handleAddTrip = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const res = await fetch("/api/trips", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(tripForm)
+      // 2. Load Firestore Packages
+      const q = query(collection(db, 'packages'), orderBy('createdAt', 'desc'));
+      const snapshot = await getDocs(q);
+      const packages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      // 3. Find missing packages or ones that need updating
+      const tripsToSync = packages.filter((pkg: any) => {
+        const matchingTrip = erpTrips.find((t: any) => t.package_id === pkg.id);
+        return !matchingTrip || matchingTrip.destination !== pkg.name; // Keep it simple
       });
-      if (res.ok) {
-        toast.success("تم إضافة الرحلة بنجاح");
-        setTripForm({ code: '', destination: '', capacity: '', default_price: '', start_date: '', end_date: '' });
-        fetchTrips();
+
+      // 4. Sync each missing/updated package
+      for (const pkg of tripsToSync) {
+        await fetch("/api/trips/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: pkg.id,
+            name: (pkg as any).name,
+            capacity: (pkg as any).capacity || 50,
+            minPrice: getMinPrice(pkg),
+            image: (pkg as any).image || ''
+          })
+        });
       }
-    } catch {
-      toast.error('حدث خطأ');
+
+      // 5. Refetch ERP Trips
+      const finalRes = await fetch("/api/trips");
+      const finalTrips = await finalRes.json();
+      setTrips(finalTrips);
+    } catch (err) {
+      toast.error('حدث خطأ أثناء مزامنة وتحميل البيانات');
+    } finally {
+      setAutoSyncing(false);
     }
   };
 
@@ -66,14 +74,19 @@ export function Trips() {
       <h1 className="text-3xl font-black text-slate-800">إدارة الرحلات والعروض</h1>
 
       <div className="pt-2">
-        {trips.length === 0 ? (
+        {autoSyncing ? (
+          <div className="text-center py-12">
+             <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+             <p className="text-slate-500 font-bold">جاري المزامنة التلقائية مع نظام الباقات وتحميل البيانات...</p>
+          </div>
+        ) : trips.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-12 bg-white rounded-3xl border border-dashed border-slate-200 text-center max-w-2xl mx-auto mt-8">
             <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6 border border-slate-100">
               <Plane className="w-10 h-10 text-slate-400 rotate-12" />
             </div>
             <h3 className="text-xl font-black text-slate-800 mb-3">لا توجد رحلات مجدولة حالياً</h3>
             <p className="text-slate-500 font-medium max-w-md mb-8 leading-relaxed">
-              تم ربط نظام الرحلات بشكل متكامل بنظام الباقات. يرجى الانتقال إلى صفحة إدارة الباقات ومزامنة الباقات المتاحة لتظهر في هذه الصفحة تلقائياً.
+              تتم مزامنة هذه الصفحة تلقائياً مع نظام الباقات. يبدو أنه لا توجد باقات مدخلة حتى الآن.
             </p>
             <Link 
               to="/admin/packages" 
@@ -87,7 +100,7 @@ export function Trips() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {trips.map(trip => {
               const currentCapacity = Number(trip.capacity) || 1;
-              const currentBooked = Number(trip.booked_seats) || 0;
+              const currentBooked = Number((trip as any).booked_seats) || 0;
               const fillPerc = Math.min(100, Math.round((currentBooked / currentCapacity) * 100)) || 0;
               let barColor = "bg-blue-500";
               if (fillPerc >= 90) barColor = "bg-rose-500";
