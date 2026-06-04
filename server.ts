@@ -15,6 +15,11 @@ app.use(cors({
 app.use(express.json());
 const PORT = 3000;
 
+app.use((req, res, next) => {
+  console.log(`[REQ] ${req.method} ${req.url}`);
+  next();
+});
+
 const isProd = process.env.NODE_ENV === "production" || process.env.NODE_ENV === "preview";
 const DB_PATH = isProd ? path.join("/tmp", "travel-erp-v2.json") : path.join(process.cwd(), "travel-erp-v2.json");
 

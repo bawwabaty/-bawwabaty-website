@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { CashJournal as CashJournalType } from "../../erp-types";
 import { Download, Plus, Wallet, TrendingUp, TrendingDown, ArrowDownLeft, ArrowUpRight, X } from "lucide-react";
 import toast from "react-hot-toast";
+import { getApiUrl } from "../../lib/api";
 
 export function CashJournal() {
   const [journal, setJournal] = useState<CashJournalType[]>([]);
@@ -15,7 +16,7 @@ export function CashJournal() {
   });
 
   const fetchData = () => {
-    fetch("/api/cash-journal")
+    fetch(getApiUrl("/api/cash-journal"))
       .then(r => r.json())
       .then(setJournal)
       .catch(console.error);
@@ -33,7 +34,7 @@ export function CashJournal() {
     }
     
     try {
-      const res = await fetch("/api/cash-journal", {
+      const res = await fetch(getApiUrl("/api/cash-journal"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

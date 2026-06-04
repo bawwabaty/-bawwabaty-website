@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { TrendingUp, CreditCard, Receipt, Wallet, Plane } from "lucide-react";
 import { Trip } from "../../erp-types";
+import { getApiUrl } from "../../lib/api";
 
 export function ERPDashboard() {
   const [stats, setStats] = useState({
@@ -14,17 +15,17 @@ export function ERPDashboard() {
   const [chartData, setChartData] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch("/api/dashboard")
+    fetch(getApiUrl("/api/dashboard"))
       .then(r => r.json())
       .then(setStats)
       .catch(console.error);
 
-    fetch("/api/trips")
+    fetch(getApiUrl("/api/trips"))
       .then(r => r.json())
       .then(setTrips)
       .catch(console.error);
 
-    fetch("/api/cash-journal")
+    fetch(getApiUrl("/api/cash-journal"))
       .then(r => r.json())
       .then(journal => {
          // Aggregate by date for chart (simple mock aggregation)
