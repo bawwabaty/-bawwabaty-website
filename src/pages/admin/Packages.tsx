@@ -84,9 +84,12 @@ export function AdminPackages() {
       if (tripsRes.ok) {
         const tripsData = await tripsRes.json();
         setErpTrips(tripsData);
+      } else {
+        const text = await tripsRes.text();
+        throw new Error(`API Error: ${tripsRes.status} ${text.substring(0, 100)}`);
       }
-    } catch (error) {
-      toast.error('حدث خطأ أثناء جلب البيانات');
+    } catch (error: any) {
+      toast.error(`حدث خطأ أثناء جلب البيانات: ${error?.message || error}`);
       console.error(error);
     } finally {
       setLoading(false);
