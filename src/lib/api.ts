@@ -1,5 +1,6 @@
 export const getApiUrl = (path: string) => {
-  // Always use relative paths for local API endpoints to ensure they
-  // hit the Express server running on the same host/port.
-  return path.startsWith("/") ? path : `/${path}`;
+  // Always use standard relative paths for local API endpoints.
+  // Use replace to strip any accidental double leading slashes.
+  const cleanPath = path.replace(/^\/+/, "/");
+  return cleanPath;
 };

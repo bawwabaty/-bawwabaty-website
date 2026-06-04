@@ -17,6 +17,17 @@ const PORT = 3000;
 
 app.use((req, res, next) => {
   console.log(`[REQ] ${req.method} ${req.url}`);
+  if (req.url.startsWith('/api/') && !req.url.includes('/trips_sync_or_something')) {
+     // Just a marker that we are checking the URL
+  }
+  next();
+});
+
+// VERY IMPORTANT: force all /api/* requests to NEVER return HTML
+app.use('/api', (req, res, next) => {
+  const originalJson = res.json;
+  const originalSend = res.send;
+  res.setHeader('Content-Type', 'application/json');
   next();
 });
 
@@ -461,6 +472,12 @@ app.get("/api/cash-journal", (req, res) => {
   res.json(full);
 });
 
+
+// Catch-all for unresolved API endpoints to prevent Vite SPA fallback from returning HTML
+app.use('/api', (req, res) => {
+  console.error("404 API Not Found:", req.url);
+  res.status(404).json({ error: "Endpoint not found in Express server APIs", requestedUrl: req.url });
+});
 
 // Vite / Frontend
 async function startServer() {
