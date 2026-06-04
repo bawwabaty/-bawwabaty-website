@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Plane, Calendar, Users, DollarSign, Calculator, ArrowLeft, ArrowUpRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
-import { getApiUrl } from "../../lib/api";
 import { Trip } from "../../erp-types";
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
@@ -30,7 +29,7 @@ export function Trips() {
     setAutoSyncing(true);
     try {
       // 1. Load ERP Trips
-      const resTrips = await fetch(getApiUrl("/api/trips"));
+      const resTrips = await fetch("/api/trips");
       if (!resTrips.ok) {
         const errorText = await resTrips.text();
         throw new Error(`Failed to load ERP trips (${resTrips.status}): ${errorText}`);
@@ -51,7 +50,7 @@ export function Trips() {
       // 4. Sync each missing/updated package concurrently to avoid timeouts
       await Promise.all(tripsToSync.map(async (pkg: any) => {
         try {
-          const syncRes = await fetch(getApiUrl("/api/trips/sync"), {
+          const syncRes = await fetch("/api/trips/sync", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -72,7 +71,7 @@ export function Trips() {
       }));
 
       // 5. Refetch ERP Trips
-      const finalRes = await fetch(getApiUrl("/api/trips"));
+      const finalRes = await fetch("/api/trips");
       if (!finalRes.ok) throw new Error("Failed to refetch trips");
       const finalTrips = await finalRes.json();
       setTrips(finalTrips);
