@@ -73,7 +73,7 @@ function App() {
               
               {/* ERP / Accounting System */}
               <Route path="erp" element={<ERPDashboard />} />
-              <Route path="trips" element={<AdminPackages />} />
+              <Route path="trips" element={<Trips />} />
               <Route path="trips/:id" element={<TripDetails />} />
               <Route path="reservations" element={<Reservations />} />
               <Route path="expenses" element={<Expenses />} />

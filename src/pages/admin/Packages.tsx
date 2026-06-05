@@ -315,8 +315,8 @@ export function AdminPackages() {
     <div className="space-y-6">
       <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">إدارة الباقات والرحلات</h2>
-          <p className="text-slate-500">أضف، عدل، أو احذف باقات العمرة والسياحة مع مزامنتها للرحلات</p>
+          <h2 className="text-2xl font-bold text-slate-800">إدارة الباقات</h2>
+          <p className="text-slate-500">أضف، عدل، أو احذف باقات العمرة والسياحة المتاحة للحجز والتقديم عبر الموقع</p>
         </div>
         <div className="flex gap-3">
           <button 

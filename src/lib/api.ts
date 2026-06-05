@@ -178,7 +178,8 @@ async function fetchCompleteSyncState() {
 
 // Register fetch interceptor immediately on site load
 const originalFetch = window.fetch;
-window.fetch = async function (input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+
+export const apiFetch = async function (input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const urlStr = typeof input === "string" ? input : input instanceof URL ? input.toString() : (input as Request).url;
   
   if (urlStr.includes("/api/")) {
@@ -617,3 +618,22 @@ window.fetch = async function (input: RequestInfo | URL, init?: RequestInit): Pr
 
   return originalFetch.apply(this, arguments as any);
 };
+
+// Apply safest interceptor binding strategy
+try {
+  Object.defineProperty(window, "fetch", {
+    value: apiFetch,
+    writable: true,
+    configurable: true,
+    enumerable: true
+  });
+  console.log("[API Interceptor] Registered successfully via Object.defineProperty");
+} catch (e) {
+  console.warn("[API Interceptor] Failed to define window.fetch via Object.defineProperty, executing direct fallback:", e);
+  try {
+    (window as any).fetch = apiFetch;
+  } catch (e2) {
+    console.error("[API Interceptor] Critical: Failed to bind interceptor fetch totally:", e2);
+  }
+}
+

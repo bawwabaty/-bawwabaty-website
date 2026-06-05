@@ -32,7 +32,7 @@ export function AdminLayout() {
 
   const erpItems = [
     { icon: Calculator, label: 'لوحة المحاسبة', path: '/admin/erp', exact: false },
-    { icon: Plane, label: 'إدارة الرحلات والباقات', path: '/admin/packages', exact: false },
+    { icon: Plane, label: 'إدارة الرحلات والعروض', path: '/admin/trips', exact: false },
     { icon: CreditCard, label: 'الحجوزات', path: '/admin/reservations', exact: false },
     { icon: Receipt, label: 'المصاريف', path: '/admin/expenses', exact: false },
     { icon: Wallet, label: 'يومية الصندوق والبنك', path: '/admin/cash-journal', exact: false },
@@ -40,6 +40,7 @@ export function AdminLayout() {
 
   const adminItems = [
     { icon: LayoutDashboard, label: 'لوحة القيادة (الموقع)', path: '/admin', exact: true },
+    { icon: Package, label: 'إدارة الباقات', path: '/admin/packages' },
     { icon: Building2, label: 'إدارة الفنادق', path: '/admin/hotels' },
     { icon: Briefcase, label: 'إدارة الخدمات', path: '/admin/services' },
     { icon: UsersIcon, label: 'إدارة المستخدمين', path: '/admin/users' },
