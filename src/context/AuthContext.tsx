@@ -26,7 +26,9 @@ const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 // Using email matching to identify admins from user request
 const checkIsAdmin = (email: string | null) => {
   if (!email) return false;
-  return email.toLowerCase() === 'bawwabaty@gmail.com' || email.toLowerCase().includes('@bawwabaty');
+  return email.toLowerCase() === 'bawwabaty@gmail.com' || 
+         email.toLowerCase() === 'abdellatifbawwabaty@gmail.com' || 
+         email.toLowerCase().includes('@bawwabaty');
 };
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
