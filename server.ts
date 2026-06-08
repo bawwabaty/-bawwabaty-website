@@ -49,7 +49,7 @@ try {
 }
 
 // Helper to load DB
-function loadDb() {
+async function loadDb() {
   const initialDb = {
     trips: [],
     clients: [],
@@ -60,18 +60,24 @@ function loadDb() {
     audit_logs: []
   };
 
-  if (!fs.existsSync(DB_PATH)) {
-    saveDb(initialDb);
-    return initialDb;
-  }
   try {
-    const data = fs.readFileSync(DB_PATH, "utf-8");
-    const parsed = JSON.parse(data);
-    return { ...initialDb, ...parsed };
+    if (firestoreDb) {
+      const docRef = doc(firestoreDb, "backups", "current");
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        const cloudData = JSON.parse(snap.data().dbContent);
+        return { ...initialDb, ...cloudData };
+      }
+    } else {
+      if (fs.existsSync(DB_PATH)) {
+         const data = fs.readFileSync(DB_PATH, "utf-8");
+         return { ...initialDb, ...JSON.parse(data) };
+      }
+    }
   } catch (err) {
     console.error("Error reading DB:", err);
-    return initialDb;
   }
+  return initialDb;
 }
 
 // Helper to save DB with automated Cloud Backup
@@ -118,8 +124,8 @@ function logAudit(db: any, action: string, entity: string, entity_id: any, detai
 
 // API Routes
 
-app.get("/api/dashboard", (req, res) => {
-  const db = loadDb();
+app.get("/api/dashboard", async (req, res) => {
+  const db = await loadDb();
   
   // Calculate chiffre d'affaires (confirmed reservations)
   const chiffre_d_affaires = db.reservations
@@ -144,9 +150,9 @@ app.get("/api/dashboard", (req, res) => {
   });
 });
 
-app.get("/api/trips", (req, res) => {
+app.get("/api/trips", async (req, res) => {
   try {
-    const db = loadDb();
+    const db = await loadDb();
     if (!db.trips) db.trips = [];
     const trips = db.trips.filter((t: any) => !t.deleted).map((trip: any) => {
       // Dynamic calculations
@@ -180,8 +186,8 @@ app.get("/api/trips", (req, res) => {
   }
 });
 
-app.post("/api/trips", (req, res) => {
-  const db = loadDb();
+app.post("/api/trips", async (req, res) => {
+  const db = await loadDb();
   const trip = {
     ...req.body,
     id: getNextId(db.trips),
@@ -193,9 +199,9 @@ app.post("/api/trips", (req, res) => {
   res.json(trip);
 });
 
-app.post("/api/trips/sync", (req, res) => {
+app.post("/api/trips/sync", async (req, res) => {
   try {
-    const db = loadDb();
+    const db = await loadDb();
     const pkg = req.body;
     if (!db.trips) db.trips = [];
     
@@ -241,8 +247,8 @@ app.post("/api/trips/sync", (req, res) => {
   }
 });
 
-app.delete("/api/trips/sync/:packageId", (req, res) => {
-  const db = loadDb();
+app.delete("/api/trips/sync/:packageId", async (req, res) => {
+  const db = await loadDb();
   const packageId = req.params.packageId;
   const trip = db.trips.find((t: any) => t.package_id === packageId && !t.deleted);
   if (trip) {
@@ -253,8 +259,8 @@ app.delete("/api/trips/sync/:packageId", (req, res) => {
   res.json({ success: true });
 });
 
-app.get("/api/trips/:id", (req, res) => {
-  const db = loadDb();
+app.get("/api/trips/:id", async (req, res) => {
+  const db = await loadDb();
   const trip = db.trips.find((t: any) => t.id == req.params.id && !t.deleted);
   if (!trip) return res.status(404).json({ error: "Trip not found" });
   
@@ -268,7 +274,7 @@ app.get("/api/trips/:id", (req, res) => {
   res.json({ ...trip, reservations, expenses });
 });
 
-app.post("/api/trips/calculate", (req, res) => {
+app.post("/api/trips/calculate", async (req, res) => {
   const { expected_expenses, profit_margin } = req.body;
   const exp = parseFloat(expected_expenses) || 0;
   const margin = parseFloat(profit_margin) || 0;
@@ -285,8 +291,8 @@ app.post("/api/trips/calculate", (req, res) => {
 });
 
 // Reservations
-app.get("/api/reservations", (req, res) => {
-  const db = loadDb();
+app.get("/api/reservations", async (req, res) => {
+  const db = await loadDb();
   const reservations = db.reservations
     .filter((r: any) => !r.deleted)
     .map((r: any) => {
@@ -308,8 +314,8 @@ app.get("/api/reservations", (req, res) => {
   res.json(reservations);
 });
 
-app.post("/api/reservations", (req, res) => {
-  const db = loadDb();
+app.post("/api/reservations", async (req, res) => {
+  const db = await loadDb();
   const trip_id = req.body.trip_id;
   const trip = db.trips.find((t: any) => t.id == trip_id && !t.deleted);
   if (!trip) return res.status(404).json({ error: "Trip not found" });
@@ -348,8 +354,8 @@ app.post("/api/reservations", (req, res) => {
   res.json(reservation);
 });
 
-app.delete("/api/reservations/:id", (req, res) => {
-  const db = loadDb();
+app.delete("/api/reservations/:id", async (req, res) => {
+  const db = await loadDb();
   const rIdx = db.reservations.findIndex((r: any) => r.id == req.params.id);
   if (rIdx !== -1) {
     db.reservations[rIdx].deleted = true;
@@ -359,8 +365,8 @@ app.delete("/api/reservations/:id", (req, res) => {
   res.json({ success: true });
 });
 
-app.post("/api/reservations/:id/pay", (req, res) => {
-  const db = loadDb();
+app.post("/api/reservations/:id/pay", async (req, res) => {
+  const db = await loadDb();
   const resv = db.reservations.find((r: any) => r.id == req.params.id);
   if (!resv) return res.status(404).json({ error: "Reservation not found" });
 
@@ -385,8 +391,8 @@ app.post("/api/reservations/:id/pay", (req, res) => {
   res.json(paymentEntry);
 });
 
-app.put("/api/reservations/:id/status", (req, res) => {
-  const db = loadDb();
+app.put("/api/reservations/:id/status", async (req, res) => {
+  const db = await loadDb();
   const rIdx = db.reservations.findIndex((r: any) => r.id == req.params.id);
   if (rIdx === -1) return res.status(404).json({ error: "Res not found" });
   
@@ -424,8 +430,8 @@ app.put("/api/reservations/:id/status", (req, res) => {
 });
 
 // Expenses
-app.get("/api/expenses", (req, res) => {
-  const db = loadDb();
+app.get("/api/expenses", async (req, res) => {
+  const db = await loadDb();
   const expenses = db.expenses.filter((e: any) => !e.deleted).map(e => {
     let trip = null;
     if (e.trip_id) {
@@ -436,8 +442,8 @@ app.get("/api/expenses", (req, res) => {
   res.json(expenses);
 });
 
-app.post("/api/expenses", (req, res) => {
-  const db = loadDb();
+app.post("/api/expenses", async (req, res) => {
+  const db = await loadDb();
   const expense = {
     ...req.body,
     id: getNextId(db.expenses),
@@ -467,8 +473,8 @@ app.post("/api/expenses", (req, res) => {
   res.json(expense);
 });
 
-app.delete("/api/expenses/:id", (req, res) => {
-  const db = loadDb();
+app.delete("/api/expenses/:id", async (req, res) => {
+  const db = await loadDb();
   const eIdx = db.expenses.findIndex((e: any) => e.id == req.params.id);
   if (eIdx !== -1) {
     db.expenses[eIdx].deleted = true;
@@ -478,8 +484,8 @@ app.delete("/api/expenses/:id", (req, res) => {
 });
 
 // Cash Journal
-app.post("/api/cash-journal", (req, res) => {
-  const db = loadDb();
+app.post("/api/cash-journal", async (req, res) => {
+  const db = await loadDb();
   const entry = {
     ...req.body,
     id: getNextId(db.cash_journal),
@@ -491,8 +497,8 @@ app.post("/api/cash-journal", (req, res) => {
   res.json(entry);
 });
 
-app.delete("/api/cash-journal/:id", (req, res) => {
-  const db = loadDb();
+app.delete("/api/cash-journal/:id", async (req, res) => {
+  const db = await loadDb();
   const index = db.cash_journal.findIndex((j: any) => j.id == req.params.id);
   if (index !== -1) {
     db.cash_journal.splice(index, 1);
@@ -501,8 +507,8 @@ app.delete("/api/cash-journal/:id", (req, res) => {
   res.json({ success: true });
 });
 
-app.get("/api/cash-journal", (req, res) => {
-  const db = loadDb();
+app.get("/api/cash-journal", async (req, res) => {
+  const db = await loadDb();
   let cumulative = 0;
   const journal = db.cash_journal.map((j: any) => {
     const amount = parseFloat(j.amount) || 0;

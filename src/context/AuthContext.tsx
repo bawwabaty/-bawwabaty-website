@@ -47,7 +47,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           let role: 'admin' | 'user' = checkIsAdmin(currentUser.email) ? 'admin' : 'user';
           
           if (userDoc.exists()) {
-            setProfile(userDoc.data() as UserProfile);
+            const data = userDoc.data() as UserProfile;
+            if (role === 'admin' && data.role !== 'admin') {
+              // Upgrade legacy user to admin if they match checkIsAdmin
+              await setDoc(userDocRef, { role: 'admin' }, { merge: true });
+              data.role = 'admin';
+            }
+            setProfile(data);
           } else {
             // Create user profile
             const newProfile: any = {

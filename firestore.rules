@@ -13,10 +13,11 @@ service cloud.firestore {
     }
 
     function isAdmin() {
+      let email = request.auth.token.email.lower();
       return isSignedIn() && (
-        request.auth.token.email.matches('.*@bawwabaty.*') || 
-        request.auth.token.email == 'bawwabaty@gmail.com' ||
-        request.auth.token.email == 'abdellatifbawwabaty@gmail.com'
+        email.matches('.*@bawwabaty.*') || 
+        email == 'bawwabaty@gmail.com' ||
+        email == 'abdellatifbawwabaty@gmail.com'
       );
     }
 
@@ -30,7 +31,7 @@ service cloud.firestore {
         data.email is string && data.email.size() <= 100 &&
         data.name is string && data.name.size() <= 100 &&
         data.role in ['user', 'admin'] &&
-        data.createdAt == request.time;
+        data.createdAt is timestamp;
     }
 
     function isValidPackage(data) {
