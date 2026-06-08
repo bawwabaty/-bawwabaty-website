@@ -13,12 +13,12 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      let email = request.auth.token.email.lower();
-      return isSignedIn() && (
-        email.matches('.*@bawwabaty.*') || 
-        email == 'bawwabaty@gmail.com' ||
-        email == 'abdellatifbawwabaty@gmail.com'
-      );
+      return isSignedIn() && 
+             request.auth.token.keys().hasAll(['email']) && (
+               request.auth.token.email.lower().matches('.*@bawwabaty\\..*') || 
+               request.auth.token.email.lower() == 'bawwabaty@gmail.com' ||
+               request.auth.token.email.lower() == 'abdellatifbawwabaty@gmail.com'
+             );
     }
 
     function incoming() { return request.resource.data; }
