@@ -3,6 +3,7 @@ import { CashJournal as CashJournalType } from "../../erp-types";
 import { Download, Plus, Wallet, TrendingUp, TrendingDown, ArrowDownLeft, ArrowUpRight, X, Trash } from "lucide-react";
 import toast from "react-hot-toast";
 import { getApiUrl } from "../../lib/api";
+import { useERPSync } from "../../hooks/useERPSync";
 
 export function CashJournal() {
   const [journal, setJournal] = useState<CashJournalType[]>([]);
@@ -25,6 +26,8 @@ export function CashJournal() {
       .then(setJournal)
       .catch(console.error);
   };
+
+  useERPSync(fetchData);
 
   useEffect(() => {
     fetchData();

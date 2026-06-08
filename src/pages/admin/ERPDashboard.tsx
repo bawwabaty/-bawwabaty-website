@@ -3,6 +3,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { TrendingUp, CreditCard, Receipt, Wallet, Plane } from "lucide-react";
 import { Trip } from "../../erp-types";
 import { getApiUrl } from "../../lib/api";
+import { useERPSync } from "../../hooks/useERPSync";
 
 export function ERPDashboard() {
   const [stats, setStats] = useState({
@@ -14,7 +15,7 @@ export function ERPDashboard() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
 
-  useEffect(() => {
+  const fetchDashboardData = () => {
     fetch(getApiUrl("/api/dashboard"))
       .then(r => r.json())
       .then(setStats)
@@ -51,6 +52,12 @@ export function ERPDashboard() {
          }
       })
       .catch(console.error);
+  };
+
+  useERPSync(fetchDashboardData);
+
+  useEffect(() => {
+    fetchDashboardData();
   }, []);
 
   const formatCurrency = (val: number) => new Intl.NumberFormat('ar-MA', { style: 'currency', currency: 'MAD' }).format(val);

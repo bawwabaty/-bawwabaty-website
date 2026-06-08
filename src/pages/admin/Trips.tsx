@@ -3,86 +3,37 @@ import { Plane, Calendar, Users, DollarSign, Calculator, ArrowLeft, ArrowUpRight
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Trip } from "../../erp-types";
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { getApiUrl } from "../../lib/api";
+import { useERPSync } from "../../hooks/useERPSync";
 
 export function Trips() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [autoSyncing, setAutoSyncing] = useState(true);
 
-  useEffect(() => {
-    initializeAndSyncTrips();
-  }, []);
-
-  const getMinPrice = (pkg: any) => {
-    if (!pkg.programs || pkg.programs.length === 0) return 0;
-    let min = Infinity;
-    pkg.programs.forEach((p: any) => {
-      Object.values(p.prices || {}).forEach((price: any) => {
-        if (price > 0 && price < min) min = price;
-      });
-    });
-    return min === Infinity ? 0 : min;
-  };
-
-  const initializeAndSyncTrips = async () => {
+  const loadTrips = async () => {
     setAutoSyncing(true);
     try {
-      // 1. Load ERP Trips
       const resTrips = await fetch(getApiUrl("/api/trips"));
       if (!resTrips.ok) {
-        const errorText = await resTrips.text();
-        throw new Error(`Failed to load ERP trips (${resTrips.status}): ${errorText}`);
+        throw new Error("Failed to load ERP trips");
       }
-      const erpTrips: Trip[] = await resTrips.json();
-
-      // 2. Load Firestore Packages
-      const q = query(collection(db, 'packages'), orderBy('createdAt', 'desc'));
-      const snapshot = await getDocs(q);
-      const packages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-      // 3. Find missing packages or ones that need updating
-      const tripsToSync = packages.filter((pkg: any) => {
-        const matchingTrip = erpTrips.find((t: any) => t.package_id === pkg.id);
-        return !matchingTrip || matchingTrip.destination !== pkg.name; // Keep it simple
-      });
-
-      // 4. Sync each missing/updated package concurrently to avoid timeouts
-      await Promise.all(tripsToSync.map(async (pkg: any) => {
-        try {
-          const syncRes = await fetch(getApiUrl("/api/trips/sync"), {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              id: pkg.id,
-              name: pkg.name,
-              capacity: pkg.capacity || 50,
-              minPrice: getMinPrice(pkg),
-              image: pkg.image || ''
-            })
-          });
-          if (!syncRes.ok) {
-            const errData = await syncRes.text();
-            console.error("Sync failed for package", pkg.id, errData);
-          }
-        } catch (syncErr) {
-          console.error("Network or timeout error syncing package", pkg.id, syncErr);
-        }
-      }));
-
-      // 5. Refetch ERP Trips
-      const finalRes = await fetch(getApiUrl("/api/trips"));
-      if (!finalRes.ok) throw new Error("Failed to refetch trips");
-      const finalTrips = await finalRes.json();
+      const finalTrips = await resTrips.json();
       setTrips(finalTrips);
     } catch (err: any) {
-      console.error("SYNC_ERROR_DETAILS:", err);
-      toast.error('حدث خطأ أثناء مزامنة وتحميل البيانات: ' + (err.message || 'خطأ مجهول'));
+      console.error(err);
+      toast.error('حدث خطأ أثناء تحميل الرحلات من المحاسبة');
     } finally {
       setAutoSyncing(false);
     }
   };
+
+  useERPSync(loadTrips);
+
+  useEffect(() => {
+    loadTrips();
+  }, []);
 
   return (
     <div className="space-y-8">

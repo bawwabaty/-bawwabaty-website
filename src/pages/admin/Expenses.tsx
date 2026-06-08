@@ -3,6 +3,7 @@ import { Expense, Trip } from "../../erp-types";
 import { Receipt, Plane, ArrowRight, DollarSign, Wallet, CheckSquare, Square, Trash } from "lucide-react";
 import toast from "react-hot-toast";
 import { getApiUrl } from "../../lib/api";
+import { useERPSync } from "../../hooks/useERPSync";
 
 export function Expenses() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -12,13 +13,18 @@ export function Expenses() {
     description: '', amount: '', type: 'Fixe', trip_id: '', pay_now: false
   });
 
+  const fetchExpenses = () => fetch(getApiUrl("/api/expenses")).then(r => r.json()).then(setExpenses).catch(console.error);
+  const fetchTrips = () => fetch(getApiUrl("/api/trips")).then(r => r.json()).then(setTrips).catch(console.error);
+
+  useERPSync(() => {
+    fetchExpenses();
+    fetchTrips();
+  });
+
   useEffect(() => {
     fetchExpenses();
     fetchTrips();
   }, []);
-
-  const fetchExpenses = () => fetch(getApiUrl("/api/expenses")).then(r => r.json()).then(setExpenses).catch(console.error);
-  const fetchTrips = () => fetch(getApiUrl("/api/trips")).then(r => r.json()).then(setTrips).catch(console.error);
 
   const handleDelete = async (id: number) => {
     if (!window.confirm("هل أنت متأكد من حذف هذا المصروف؟")) return;

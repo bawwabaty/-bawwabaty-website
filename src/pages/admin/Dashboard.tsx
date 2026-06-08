@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, getDocs } from 'firebase/firestore';
+import { collection, onSnapshot, query, getDocs } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { Package, Users, Building2, TrendingUp, Calculator, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -15,28 +15,20 @@ export function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const [packagesSnap, hotelsSnap, usersSnap, servicesSnap] = await Promise.all([
-          getDocs(query(collection(db, 'packages'))),
-          getDocs(query(collection(db, 'hotels'))),
-          getDocs(query(collection(db, 'users'))),
-          getDocs(query(collection(db, 'services')))
-        ]);
+    const unsubPkgs = onSnapshot(collection(db, 'packages'), snap => setStats(s => ({...s, packages: snap.size})));
+    const unsubHotels = onSnapshot(collection(db, 'hotels'), snap => setStats(s => ({...s, hotels: snap.size})));
+    const unsubUsers = onSnapshot(collection(db, 'users'), snap => setStats(s => ({...s, users: snap.size})));
+    const unsubServices = onSnapshot(collection(db, 'services'), snap => {
+      setStats(s => ({...s, services: snap.size}));
+      setLoading(false);
+    });
 
-        setStats({
-          packages: packagesSnap.size,
-          hotels: hotelsSnap.size,
-          users: usersSnap.size,
-          services: servicesSnap.size
-        });
-      } catch (error) {
-        console.error("Error fetching stats:", error);
-      } finally {
-        setLoading(false);
-      }
+    return () => {
+      unsubPkgs();
+      unsubHotels();
+      unsubUsers();
+      unsubServices();
     };
-    fetchStats();
   }, []);
 
   const statCards = [

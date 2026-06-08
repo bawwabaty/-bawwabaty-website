@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Building2, Plus, Edit2, Trash2, X, Save } from 'lucide-react';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import toast from 'react-hot-toast';
 
@@ -20,22 +20,18 @@ export function AdminHotels() {
   const defaultFormData = { name: '', location: '', rating: 5 };
   const [formData, setFormData] = useState(defaultFormData);
 
-  const fetchHotels = async () => {
-    try {
-      const q = query(collection(db, 'hotels'), orderBy('createdAt', 'desc'));
-      const snapshot = await getDocs(q);
+  useEffect(() => {
+    const q = query(collection(db, 'hotels'), orderBy('createdAt', 'desc'));
+    const unsub = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Hotel[];
       setHotels(data);
-    } catch (error) {
+      setLoading(false);
+    }, (error) => {
       toast.error('حدث خطأ أثناء جلب الفنادق');
       console.error(error);
-    } finally {
       setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchHotels();
+    });
+    return () => unsub();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -46,7 +42,6 @@ export function AdminHotels() {
       } else {
         await addDoc(collection(db, 'hotels'), { ...formData, createdAt: serverTimestamp() });
       }
-      fetchHotels();
       setIsModalOpen(false);
       setFormData(defaultFormData);
       setEditingId(null);
@@ -64,7 +59,6 @@ export function AdminHotels() {
     try {
       await deleteDoc(doc(db, 'hotels', id));
       toast.success('تم الحذف بنجاح');
-      fetchHotels();
     } catch (error) {
       toast.error('حدث خطأ أثناء الحذف');
     }

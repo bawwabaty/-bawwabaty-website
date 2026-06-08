@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { getApiUrl } from "../../lib/api";
+import { useERPSync } from "../../hooks/useERPSync";
 
 export function TripDetails() {
   const { id } = useParams();
@@ -14,7 +15,7 @@ export function TripDetails() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [activeTab, setActiveTab] = useState<'reservations' | 'expenses' | 'rooming'>('reservations');
 
-  useEffect(() => {
+  const fetchTripDetails = () => {
     fetch(getApiUrl(`/api/trips/${id}`))
       .then(r => r.json())
       .then(data => {
@@ -23,6 +24,12 @@ export function TripDetails() {
         setExpenses(data.expenses || []);
       })
       .catch(console.error);
+  };
+
+  useERPSync(fetchTripDetails);
+
+  useEffect(() => {
+    fetchTripDetails();
   }, [id]);
 
   if (!trip) return <div className="text-center p-12">جاري التحميل...</div>;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Briefcase, Plus, Edit2, Trash2, X, Save } from 'lucide-react';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import toast from 'react-hot-toast';
 
@@ -19,22 +19,18 @@ export function AdminServices() {
   const defaultFormData = { name: '', description: '' };
   const [formData, setFormData] = useState(defaultFormData);
 
-  const fetchServices = async () => {
-    try {
-      const q = query(collection(db, 'services'), orderBy('createdAt', 'desc'));
-      const snapshot = await getDocs(q);
+  useEffect(() => {
+    const q = query(collection(db, 'services'), orderBy('createdAt', 'desc'));
+    const unsub = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Service[];
       setServices(data);
-    } catch (error) {
+      setLoading(false);
+    }, (error) => {
       toast.error('حدث خطأ أثناء جلب الخدمات');
       console.error(error);
-    } finally {
       setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchServices();
+    });
+    return () => unsub();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -45,7 +41,6 @@ export function AdminServices() {
       } else {
         await addDoc(collection(db, 'services'), { ...formData, createdAt: serverTimestamp() });
       }
-      fetchServices();
       setIsModalOpen(false);
       setFormData(defaultFormData);
       setEditingId(null);
@@ -63,7 +58,6 @@ export function AdminServices() {
     try {
       await deleteDoc(doc(db, 'services', id));
       toast.success('تم الحذف بنجاح');
-      fetchServices();
     } catch (error) {
       toast.error('حدث خطأ أثناء الحذف');
     }

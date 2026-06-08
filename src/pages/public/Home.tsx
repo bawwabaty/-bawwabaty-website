@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Plane, Star, ShieldCheck, Clock, MapPin, Building, Building2, Map as MapIcon, ArrowLeft, Ticket, Users, FileText, Bus, CheckCircle2, Headset, ThumbsUp, CreditCard, BookOpen, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
-import { collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { FloatingSocial } from '../../components/FloatingSocial';
 import { getWhatsAppUrl } from '../../lib/whatsapp';
@@ -112,33 +112,31 @@ export function Home() {
   const currentYear = new Date().getFullYear();
 
   useEffect(() => {
-    const fetchFeatured = async () => {
-      try {
-        const q = query(
-          collection(db, 'packages'),
-          where('type', '==', 'umrah')
-        );
-        const snapshot = await getDocs(q);
-        let pkgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
-        
-        // Sort manually by creation time
-        pkgs.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
-        
-        // Try to filter explicitly featured ones
-        const trulyFeatured = pkgs.filter(p => p.featured);
-        if (trulyFeatured.length >= 3) {
-          setFeaturedPackages(trulyFeatured.slice(0, 3));
-        } else if (trulyFeatured.length > 0) {
-          setFeaturedPackages(trulyFeatured);
-        } else {
-          // If none are specifically featured, show the top 3 newest
-          setFeaturedPackages(pkgs.slice(0, 3));
-        }
-      } catch (error) {
-        console.error("Error fetching featured packages:", error);
+    const q = query(
+      collection(db, 'packages'),
+      where('type', '==', 'umrah')
+    );
+    const unsub = onSnapshot(q, (snapshot) => {
+      let pkgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
+      
+      // Sort manually by creation time
+      pkgs.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+      
+      // Try to filter explicitly featured ones
+      const trulyFeatured = pkgs.filter(p => p.featured);
+      if (trulyFeatured.length >= 3) {
+        setFeaturedPackages(trulyFeatured.slice(0, 3));
+      } else if (trulyFeatured.length > 0) {
+        setFeaturedPackages(trulyFeatured);
+      } else {
+        // If none are specifically featured, show the top 3 newest
+        setFeaturedPackages(pkgs.slice(0, 3));
       }
-    };
-    fetchFeatured();
+    }, (error) => {
+      console.error("Error fetching featured packages:", error);
+    });
+
+    return () => unsub();
   }, []);
 
   const getMinPrice = (pkg: any) => {
