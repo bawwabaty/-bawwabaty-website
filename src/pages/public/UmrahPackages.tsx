@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { Plane, Building, Clock, MapPin } from 'lucide-react';
 import * as Icons from 'lucide-react';
@@ -14,21 +14,23 @@ export function UmrahPackages() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const q = query(
-      collection(db, 'packages'),
-      where('type', '==', 'umrah')
-    );
-    const unsub = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
-      data.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
-      setPackages(data);
-      setLoading(false);
-    }, (error) => {
-      console.error("Error fetching packages:", error);
-      setLoading(false);
-    });
-
-    return () => unsub();
+    const fetchUmrahPackages = async () => {
+      try {
+        const q = query(
+          collection(db, 'packages'),
+          where('type', '==', 'umrah')
+        );
+        const snapshot = await getDocs(q);
+        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
+        data.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+        setPackages(data);
+      } catch (error) {
+        console.error("Error fetching packages:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUmrahPackages();
   }, []);
 
   const getMinPrice = (pkg: any) => {

@@ -2,15 +2,12 @@ import React, { useState, useEffect } from "react";
 import { Reservation, Trip } from "../../erp-types";
 import { CreditCard, Plus, Plane, Users, CheckCircle, Clock, AlertTriangle, XCircle, Home, X, Trash, Phone, Printer } from "lucide-react";
 import toast from "react-hot-toast";
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../lib/firebase";
-import { useERPSync } from "../../hooks/useERPSync";
-import { useAuth } from "../../context/AuthContext";
 
 import { getApiUrl } from "../../lib/api";
 
 export function Reservations() {
-  const { loading, isAdmin } = useAuth();
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [trips, setTrips] = useState<Trip[]>([]);
   const [packages, setPackages] = useState<any[]>([]);
@@ -21,30 +18,26 @@ export function Reservations() {
 
   const [receiptData, setReceiptData] = useState<any>(null);
 
-  const fetchData = React.useCallback(() => {
-    fetch(getApiUrl("/api/reservations")).then(r => r.json()).then(setReservations).catch(console.error);
-  }, []);
-  
-  const fetchTrips = React.useCallback(() => {
-    fetch(getApiUrl("/api/trips")).then(r => r.json()).then(setTrips).catch(console.error);
-  }, []);
-
-  const loadData = React.useCallback(() => {
+  useEffect(() => {
     fetchData();
     fetchTrips();
-  }, [fetchData, fetchTrips]);
+    fetchPackages();
+  }, []);
 
-  useERPSync(loadData);
+  const fetchData = () => {
+    fetch(getApiUrl("/api/reservations")).then(r => r.json()).then(setReservations).catch(console.error);
+  };
+  
+  const fetchTrips = () => Object.assign([], fetch(getApiUrl("/api/trips")).then(r => r.json()).then(setTrips).catch(console.error));
 
-  useEffect(() => {
-    if (loading || !isAdmin) return;
-
-    loadData();
-    const unsub = onSnapshot(collection(db, 'packages'), (snap) => {
+  const fetchPackages = async () => {
+    try {
+      const snap = await getDocs(collection(db, 'packages'));
       setPackages(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    });
-    return () => unsub();
-  }, [loading, isAdmin, loadData]);
+    } catch (error) {
+      console.error(error);
+    }
+  };
   
   // Logic to auto-fill price based on package
   useEffect(() => {

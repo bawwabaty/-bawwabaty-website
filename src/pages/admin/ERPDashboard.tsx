@@ -1,13 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { TrendingUp, CreditCard, Receipt, Wallet, Plane } from "lucide-react";
 import { Trip } from "../../erp-types";
 import { getApiUrl } from "../../lib/api";
-import { useERPSync } from "../../hooks/useERPSync";
-import { useAuth } from "../../context/AuthContext";
 
 export function ERPDashboard() {
-  const { loading, isAdmin } = useAuth();
   const [stats, setStats] = useState({
     chiffre_d_affaires: 0,
     total_paiement: 0,
@@ -17,7 +14,7 @@ export function ERPDashboard() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
 
-  const fetchDashboardData = useCallback(() => {
+  useEffect(() => {
     fetch(getApiUrl("/api/dashboard"))
       .then(r => r.json())
       .then(setStats)
@@ -55,14 +52,6 @@ export function ERPDashboard() {
       })
       .catch(console.error);
   }, []);
-
-  useERPSync(fetchDashboardData);
-
-  useEffect(() => {
-    if (!loading && isAdmin) {
-      fetchDashboardData();
-    }
-  }, [loading, isAdmin, fetchDashboardData]);
 
   const formatCurrency = (val: number) => new Intl.NumberFormat('ar-MA', { style: 'currency', currency: 'MAD' }).format(val);
 

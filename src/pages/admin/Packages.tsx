@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { getApiUrl } from "../../lib/api";
-import { useAuth } from "../../context/AuthContext";
 import { Plus, Edit2, Trash2, X, Save, Image as ImageIcon, PlusCircle, Trash, RefreshCw, ArrowUpRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { useERPSync } from '../../hooks/useERPSync';
 
 const ROOM_TYPES = ['ثنائي', 'ثلاثي', 'رباعي', 'خماسي', 'سداسي'];
 
@@ -51,7 +49,6 @@ interface Package {
 }
 
 export function AdminPackages() {
-  const { loading: authLoading, isAdmin } = useAuth();
   const [packages, setPackages] = useState<Package[]>([]);
   const [erpTrips, setErpTrips] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,35 +73,28 @@ export function AdminPackages() {
 
   const [formData, setFormData] = useState<Omit<Package, 'id'>>(defaultFormData);
 
-  const fetchErpTrips = React.useCallback(async () => {
+  const fetchPackages = async () => {
     try {
-      const tripsRes = await fetch(getApiUrl("/api/trips"));
-      if (tripsRes.ok) {
-        setErpTrips(await tripsRes.json());
-      }
-    } catch(e) {
-      console.error(e);
-    }
-  }, []);
-
-  useERPSync(fetchErpTrips);
-
-  useEffect(() => {
-    if (authLoading || !isAdmin) return;
-    
-    fetchErpTrips();
-    const q = query(collection(db, 'packages'), orderBy('createdAt', 'desc'));
-    const unsub = onSnapshot(q, (snapshot) => {
+      const q = query(collection(db, 'packages'), orderBy('createdAt', 'desc'));
+      const snapshot = await getDocs(q);
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Package[];
       setPackages(data);
-      setLoading(false);
-    }, (error) => {
+
+      const tripsRes = await fetch(getApiUrl("/api/trips"));
+      if (tripsRes.ok) {
+        const tripsData = await tripsRes.json();
+        setErpTrips(tripsData);
+      } else {
+        const text = await tripsRes.text();
+        throw new Error(`API Error: ${tripsRes.status} ${text.substring(0, 100)}`);
+      }
+    } catch (error: any) {
+      toast.error(`حدث خطأ أثناء جلب البيانات: ${error?.message || error}`);
       console.error(error);
+    } finally {
       setLoading(false);
-      toast.error('حدث خطأ أثناء جلب الباقات', { id: 'fetch-packages-error' });
-    });
-    return () => unsub();
-  }, [fetchErpTrips, authLoading, isAdmin]);
+    }
+  };
 
   const syncPackagesToERP = async () => {
     setIsSyncing(true);
@@ -139,6 +129,10 @@ export function AdminPackages() {
       setIsSyncing(false);
     }
   };
+
+  useEffect(() => {
+    fetchPackages();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -189,6 +183,7 @@ export function AdminPackages() {
           console.error("فشل إضافة الرحلة تلقائياً للمحاسبة", syncError);
         }
       }
+      fetchPackages();
       setIsModalOpen(false);
       setFormData(defaultFormData);
       setEditingId(null);
@@ -216,6 +211,7 @@ export function AdminPackages() {
       }
 
       toast.success('تم الحذف بنجاح');
+      fetchPackages();
     } catch (error) {
       toast.error('حدث خطأ أثناء الحذف');
     }

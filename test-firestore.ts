@@ -7,8 +7,8 @@ const app = initializeApp(config);
 const db = getFirestore(app, config.firestoreDatabaseId);
 
 async function check() {
-  const querySnapshot = await getDocs(collection(db, 'users'));
-  console.log("Found users:", querySnapshot.size);
+  const querySnapshot = await getDocs(collection(db, 'packages'));
+  console.log("Found packages:", querySnapshot.size);
   querySnapshot.forEach(doc => console.log(doc.id, doc.data()));
   process.exit(0);
 }

@@ -3,11 +3,8 @@ import { CashJournal as CashJournalType } from "../../erp-types";
 import { Download, Plus, Wallet, TrendingUp, TrendingDown, ArrowDownLeft, ArrowUpRight, X, Trash } from "lucide-react";
 import toast from "react-hot-toast";
 import { getApiUrl } from "../../lib/api";
-import { useERPSync } from "../../hooks/useERPSync";
-import { useAuth } from "../../context/AuthContext";
 
 export function CashJournal() {
-  const { loading, isAdmin } = useAuth();
   const [journal, setJournal] = useState<CashJournalType[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form, setForm] = useState({
@@ -22,20 +19,16 @@ export function CashJournal() {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchType, setSearchType] = useState('All');
 
-  const fetchData = React.useCallback(() => {
+  const fetchData = () => {
     fetch(getApiUrl("/api/cash-journal"))
       .then(r => r.json())
       .then(setJournal)
       .catch(console.error);
-  }, []);
-
-  useERPSync(fetchData);
+  };
 
   useEffect(() => {
-    if (!loading && isAdmin) {
-      fetchData();
-    }
-  }, [loading, isAdmin, fetchData]);
+    fetchData();
+  }, []);
 
   const handleDelete = async (id: number) => {
     if (!window.confirm("هل أنت متأكد من حذف هذه العملية؟")) return;

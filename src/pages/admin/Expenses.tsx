@@ -3,11 +3,8 @@ import { Expense, Trip } from "../../erp-types";
 import { Receipt, Plane, ArrowRight, DollarSign, Wallet, CheckSquare, Square, Trash } from "lucide-react";
 import toast from "react-hot-toast";
 import { getApiUrl } from "../../lib/api";
-import { useERPSync } from "../../hooks/useERPSync";
-import { useAuth } from "../../context/AuthContext";
 
 export function Expenses() {
-  const { loading, isAdmin } = useAuth();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [trips, setTrips] = useState<Trip[]>([]);
   
@@ -15,21 +12,13 @@ export function Expenses() {
     description: '', amount: '', type: 'Fixe', trip_id: '', pay_now: false
   });
 
-  const fetchExpenses = React.useCallback(() => fetch(getApiUrl("/api/expenses")).then(r => r.json()).then(setExpenses).catch(console.error), []);
-  const fetchTrips = React.useCallback(() => fetch(getApiUrl("/api/trips")).then(r => r.json()).then(setTrips).catch(console.error), []);
-
-  const loadData = React.useCallback(() => {
+  useEffect(() => {
     fetchExpenses();
     fetchTrips();
-  }, [fetchExpenses, fetchTrips]);
+  }, []);
 
-  useERPSync(loadData);
-
-  useEffect(() => {
-    if (!loading && isAdmin) {
-      loadData();
-    }
-  }, [loading, isAdmin, loadData]);
+  const fetchExpenses = () => fetch(getApiUrl("/api/expenses")).then(r => r.json()).then(setExpenses).catch(console.error);
+  const fetchTrips = () => fetch(getApiUrl("/api/trips")).then(r => r.json()).then(setTrips).catch(console.error);
 
   const handleDelete = async (id: number) => {
     if (!window.confirm("هل أنت متأكد من حذف هذا المصروف؟")) return;

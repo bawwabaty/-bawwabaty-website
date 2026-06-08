@@ -13,12 +13,12 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn() && 
-             request.auth.token.keys().hasAll(['email']) && (
-               request.auth.token.email.lower().matches('.*@bawwabaty\\..*') || 
-               request.auth.token.email.lower() == 'bawwabaty@gmail.com' ||
-               request.auth.token.email.lower() == 'abdellatifbawwabaty@gmail.com'
-             );
+      let email = request.auth.token.email.lower();
+      return isSignedIn() && (
+        email.matches('.*@bawwabaty.*') || 
+        email == 'bawwabaty@gmail.com' ||
+        email == 'abdellatifbawwabaty@gmail.com'
+      );
     }
 
     function incoming() { return request.resource.data; }
@@ -87,14 +87,6 @@ service cloud.firestore {
     match /services/{serviceId} {
       allow read: if true;
       allow write: if isAdmin();
-    }
-
-    match /trips/{document=**} {
-      allow read, write: if isAdmin();
-    }
-
-    match /accounting/{document=**} {
-      allow read, write: if isAdmin();
     }
 
     match /backups/{backupId} {
