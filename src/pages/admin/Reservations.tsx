@@ -2,8 +2,9 @@ import React, { useState, useEffect } from "react";
 import { Reservation, Trip } from "../../erp-types";
 import { CreditCard, Plus, Plane, Users, CheckCircle, Clock, AlertTriangle, XCircle, Home, X, Trash, Phone, Printer } from "lucide-react";
 import toast from "react-hot-toast";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "../../lib/firebase";
+import { useERPSync } from "../../hooks/useERPSync";
 
 import { getApiUrl } from "../../lib/api";
 
@@ -18,26 +19,25 @@ export function Reservations() {
 
   const [receiptData, setReceiptData] = useState<any>(null);
 
-  useEffect(() => {
-    fetchData();
-    fetchTrips();
-    fetchPackages();
-  }, []);
-
   const fetchData = () => {
     fetch(getApiUrl("/api/reservations")).then(r => r.json()).then(setReservations).catch(console.error);
   };
   
   const fetchTrips = () => Object.assign([], fetch(getApiUrl("/api/trips")).then(r => r.json()).then(setTrips).catch(console.error));
 
-  const fetchPackages = async () => {
-    try {
-      const snap = await getDocs(collection(db, 'packages'));
+  useERPSync(() => {
+    fetchData();
+    fetchTrips();
+  });
+
+  useEffect(() => {
+    fetchData();
+    fetchTrips();
+    const unsub = onSnapshot(collection(db, 'packages'), (snap) => {
       setPackages(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    } catch (error) {
-      console.error(error);
-    }
-  };
+    });
+    return () => unsub();
+  }, []);
   
   // Logic to auto-fill price based on package
   useEffect(() => {

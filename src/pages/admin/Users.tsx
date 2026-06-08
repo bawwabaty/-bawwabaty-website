@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Users, UserPlus, Shield, ShieldOff, Trash2 } from 'lucide-react';
-import { collection, getDocs, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -10,25 +10,21 @@ export function AdminUsers() {
   const [loading, setLoading] = useState(true);
   const { user: currentUser } = useAuth();
 
-  const fetchUsers = async () => {
-    setLoading(true);
-    try {
-      const querySnapshot = await getDocs(collection(db, 'users'));
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'users'), (snapshot) => {
       const usersList: any[] = [];
-      querySnapshot.forEach((doc) => {
+      snapshot.forEach((doc) => {
         usersList.push({ id: doc.id, ...doc.data() });
       });
       setUsers(usersList);
-    } catch (error) {
+      setLoading(false);
+    }, (error) => {
       console.error('Error fetching users: ', error);
       toast.error('حدث خطأ أثناء جلب المستخدمين');
-    } finally {
       setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchUsers();
+    });
+    
+    return () => unsub();
   }, []);
 
   const toggleRole = async (userId: string, currentRole: string) => {
@@ -40,7 +36,6 @@ export function AdminUsers() {
     try {
         await updateDoc(doc(db, 'users', userId), { role: newRole });
         toast.success(`تم تحويل المستخدم إلى ${newRole === 'admin' ? 'مدير' : 'مستخدم عادي'}`);
-        fetchUsers();
     } catch (error) {
         console.error(error);
         toast.error('حدث خطأ أثناء تعديل الصلاحية');
@@ -56,7 +51,6 @@ export function AdminUsers() {
     try {
         await deleteDoc(doc(db, 'users', userId));
         toast.success('تم حذف المستخدم بنجاح');
-        fetchUsers();
     } catch (error) {
         console.error(error);
         toast.error('تأكد من أنك تملك صلاحيات كافية لحذف المستخدم');

@@ -4,7 +4,7 @@ import path from "path";
 import cors from "cors";
 import { createServer as createViteServer } from "vite";
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
 
 const app = express();
 app.use(cors({
@@ -34,6 +34,18 @@ app.use('/api', (req, res, next) => {
 const isProd = process.env.NODE_ENV === "production" || process.env.NODE_ENV === "preview";
 const DB_PATH = isProd ? path.join("/tmp", "travel-erp-v2.json") : path.join(process.cwd(), "travel-erp-v2.json");
 
+const initialDb = {
+  trips: [],
+  clients: [],
+  reservations: [],
+  expenses: [],
+  payments: [],
+  cash_journal: [],
+  audit_logs: []
+};
+
+let memoryDb: any = null;
+
 // Initialize Firebase for Cloud Backup
 let firestoreDb: any = null;
 try {
@@ -43,6 +55,22 @@ try {
     const firebaseApp = initializeApp(config);
     firestoreDb = getFirestore(firebaseApp, config.firestoreDatabaseId);
     console.log("Firebase initialized for persistent cloud storage backup.");
+    
+    // Subscribe to changes to keep memoryDb in sync across instances
+    const docRef = doc(firestoreDb, "backups", "current");
+    onSnapshot(docRef, (snap) => {
+      if (snap.exists() && snap.data().dbContent) {
+        try {
+          const cloudData = JSON.parse(snap.data().dbContent);
+          memoryDb = { ...initialDb, ...cloudData };
+          // also write to disk just in case
+          fs.writeFileSync(DB_PATH, snap.data().dbContent);
+        } catch (e) {
+          console.error("Failed to parse DB snap", e);
+        }
+      }
+    });
+
   }
 } catch (error) {
   console.error("Failed to initialize Firebase in server:", error);
@@ -50,28 +78,22 @@ try {
 
 // Helper to load DB
 async function loadDb() {
-  const initialDb = {
-    trips: [],
-    clients: [],
-    reservations: [],
-    expenses: [],
-    payments: [],
-    cash_journal: [],
-    audit_logs: []
-  };
-
+  if (memoryDb) return memoryDb;
+  
   try {
     if (firestoreDb) {
       const docRef = doc(firestoreDb, "backups", "current");
       const snap = await getDoc(docRef);
       if (snap.exists()) {
         const cloudData = JSON.parse(snap.data().dbContent);
-        return { ...initialDb, ...cloudData };
+        memoryDb = { ...initialDb, ...cloudData };
+        return memoryDb;
       }
     } else {
       if (fs.existsSync(DB_PATH)) {
          const data = fs.readFileSync(DB_PATH, "utf-8");
-         return { ...initialDb, ...JSON.parse(data) };
+         memoryDb = { ...initialDb, ...JSON.parse(data) };
+         return memoryDb;
       }
     }
   } catch (err) {
