@@ -420,6 +420,7 @@ export const apiFetch = async function (input: RequestInfo | URL, init?: Request
           const newClient = {
             id: client_id,
             full_name: bodyObj.client_name,
+            phone: bodyObj.client_phone || '',
             ref: generateRef('CLI'),
             deleted: false
           };
@@ -439,22 +440,25 @@ export const apiFetch = async function (input: RequestInfo | URL, init?: Request
         saveLocalDb(db);
         await pushToSupabase("reservations", reservation);
 
-        // Instantly register an Encaissement in cash journal to balance accounts
-        const paymentEntry = {
-          id: getNextId(db.cash_journal),
-          date: new Date().toISOString(),
-          receipt_ref: generateRef('PAY'),
-          entity: `${bodyObj.client_name || 'عميل'} - دفعة العمرة`,
-          type: 'Encaissement',
-          amount: parseFloat(bodyObj.agreed_price) || 0,
-          payment_method: 'Cash',
-          currency: 'MAD',
-          entity_type: 'Reservation',
-          entity_id: reservation.id
-        };
-        db.cash_journal.push(paymentEntry);
-        saveLocalDb(db);
-        await pushToSupabase("cash_journal", paymentEntry);
+        // Register initial payment if paid_amount > 0
+        const initialPayment = parseFloat(bodyObj.paid_amount) || 0;
+        if (initialPayment > 0) {
+          const paymentEntry = {
+            id: getNextId(db.cash_journal),
+            date: new Date().toISOString(),
+            receipt_ref: generateRef('PAY'),
+            entity: `${bodyObj.client_name || 'عميل'} - دفعة العمرة`,
+            type: 'Encaissement',
+            amount: initialPayment,
+            payment_method: 'Cash',
+            currency: 'MAD',
+            entity_type: 'Reservation',
+            entity_id: reservation.id
+          };
+          db.cash_journal.push(paymentEntry);
+          saveLocalDb(db);
+          await pushToSupabase("cash_journal", paymentEntry);
+        }
 
         return new Response(JSON.stringify(reservation), {
           status: 200,
@@ -595,6 +599,87 @@ export const apiFetch = async function (input: RequestInfo | URL, init?: Request
         await pushToSupabase("cash_journal", entry);
 
         return new Response(JSON.stringify(entry), {
+          status: 200,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+
+      // DELETE endpoints
+      if (path.startsWith("/api/reservations/") && !path.endsWith("/status") && !path.endsWith("/pay") && method === "DELETE") {
+        const id = path.split("/").pop();
+        const resv = (db.reservations || []).find((r: any) => r.id == id);
+        if (resv) {
+          resv.deleted = true;
+          saveLocalDb(db);
+          await pushToSupabase("reservations", resv);
+        }
+        return new Response(JSON.stringify({ success: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+
+      if (path.startsWith("/api/reservations/") && path.endsWith("/pay") && method === "POST") {
+        const idParts = path.split("/");
+        const resId = idParts[idParts.length - 2];
+        const resv = (db.reservations || []).find((r: any) => r.id == resId);
+        
+        if (!resv) {
+          return new Response(JSON.stringify({ error: "Reservation not found" }), {
+            status: 404,
+            headers: { "Content-Type": "application/json" }
+          });
+        }
+
+        const client = (db.clients || []).find((c: any) => c.id == resv.client_id);
+        const clientName = client ? client.full_name : 'عميل';
+
+        const paymentEntry = {
+          id: getNextId(db.cash_journal),
+          date: new Date().toISOString(),
+          receipt_ref: generateRef('PAY'),
+          entity: `${clientName} - دفعة المتبقي`,
+          type: 'Encaissement',
+          amount: parseFloat(bodyObj.amount) || 0,
+          payment_method: 'Cash',
+          currency: 'MAD',
+          entity_type: 'Reservation',
+          entity_id: resv.id
+        };
+        db.cash_journal.push(paymentEntry);
+        saveLocalDb(db);
+        await pushToSupabase("cash_journal", paymentEntry);
+
+        return new Response(JSON.stringify(paymentEntry), {
+          status: 200,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+
+      if (path.startsWith("/api/expenses/") && method === "DELETE") {
+        const id = path.split("/").pop();
+        const exp = (db.expenses || []).find((e: any) => e.id == id);
+        if (exp) {
+          exp.deleted = true;
+          saveLocalDb(db);
+          await pushToSupabase("expenses", exp);
+        }
+        return new Response(JSON.stringify({ success: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" }
+        });
+      }
+
+      if (path.startsWith("/api/cash-journal/") && method === "DELETE") {
+        const id = path.split("/").pop();
+        // For cash journal, we just remove it entirely or filter deleted
+        const idx = (db.cash_journal || []).findIndex((e: any) => e.id == id);
+        if (idx !== -1) {
+          db.cash_journal.splice(idx, 1);
+          saveLocalDb(db);
+          await pushDeleteToSupabase("cash_journal", id);
+        }
+        return new Response(JSON.stringify({ success: true }), {
           status: 200,
           headers: { "Content-Type": "application/json" }
         });

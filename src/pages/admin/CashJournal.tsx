@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { CashJournal as CashJournalType } from "../../erp-types";
-import { Download, Plus, Wallet, TrendingUp, TrendingDown, ArrowDownLeft, ArrowUpRight, X } from "lucide-react";
+import { Download, Plus, Wallet, TrendingUp, TrendingDown, ArrowDownLeft, ArrowUpRight, X, Trash } from "lucide-react";
 import toast from "react-hot-toast";
 import { getApiUrl } from "../../lib/api";
 
@@ -15,6 +15,10 @@ export function CashJournal() {
     currency: 'MAD'
   });
 
+  const [searchDate, setSearchDate] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchType, setSearchType] = useState('All');
+
   const fetchData = () => {
     fetch(getApiUrl("/api/cash-journal"))
       .then(r => r.json())
@@ -25,6 +29,21 @@ export function CashJournal() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("هل أنت متأكد من حذف هذه العملية؟")) return;
+    try {
+      const res = await fetch(getApiUrl(`/api/cash-journal/${id}`), { method: "DELETE" });
+      if (res.ok) {
+        toast.success("تم الحذف بنجاح");
+        fetchData();
+      } else {
+        toast.error("حدث خطأ أثناء الحذف");
+      }
+    } catch {
+      toast.error("حدث خطأ أثناء الحذف");
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,8 +76,15 @@ export function CashJournal() {
 
   const totalFormat = (v: number) => new Intl.NumberFormat('ar-MA', { style: 'currency', currency: 'MAD', maximumFractionDigits: 0 }).format(v);
 
-  const totalIn = journal.filter(j => j.type === 'Encaissement').reduce((s, j) => s + (parseFloat(j.amount as any) || 0), 0);
-  const totalOut = journal.filter(j => j.type === 'Décaissement').reduce((s, j) => s + (parseFloat(j.amount as any) || 0), 0);
+  const filteredJournal = journal.filter(j => {
+    const matchDate = !searchDate || (j.date && j.date.startsWith(searchDate));
+    const matchType = searchType === 'All' || j.type === searchType;
+    const matchTerm = !searchTerm || j.entity?.toLowerCase().includes(searchTerm.toLowerCase()) || j.receipt_ref?.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchDate && matchType && matchTerm;
+  });
+
+  const totalIn = filteredJournal.filter(j => j.type === 'Encaissement').reduce((s, j) => s + (parseFloat(j.amount as any) || 0), 0);
+  const totalOut = filteredJournal.filter(j => j.type === 'Décaissement').reduce((s, j) => s + (parseFloat(j.amount as any) || 0), 0);
   const balance = totalIn - totalOut;
 
   let balanceColor = "bg-emerald-50 border-emerald-200 text-emerald-700";
@@ -109,8 +135,33 @@ export function CashJournal() {
       </div>
 
       <div className="bg-white rounded-3xl shadow-sm border border-slate-100 flex flex-col overflow-hidden">
-        <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+        <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <h2 className="text-xl font-bold text-slate-800">سجل العمليات المالية (Cash Journal)</h2>
+          
+          <div className="flex flex-col md:flex-row gap-3">
+            <input 
+              type="date" 
+              value={searchDate}
+              onChange={(e) => setSearchDate(e.target.value)}
+              className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary"
+            />
+            <select 
+              value={searchType}
+              onChange={(e) => setSearchType(e.target.value)}
+              className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary"
+            >
+              <option value="All">جميع العمليات</option>
+              <option value="Encaissement">مدين (مداخيل)</option>
+              <option value="Décaissement">دائن (مصاريف)</option>
+            </select>
+            <input 
+              type="text" 
+              placeholder="بحث بالجهة أو المرجع..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary min-w-[200px]"
+            />
+          </div>
         </div>
         <div className="overflow-x-auto p-4">
           <table className="w-full text-right whitespace-nowrap border-collapse">
@@ -122,11 +173,12 @@ export function CashJournal() {
                 <th className="px-4 py-3 font-bold text-emerald-600 border border-slate-200 bg-emerald-50/50 text-center">مدين (Encaissement)</th>
                 <th className="px-4 py-3 font-bold text-rose-600 border border-slate-200 bg-rose-50/50 text-center">دائن (Décaissement)</th>
                 <th className="px-4 py-3 font-bold text-slate-800 border border-slate-200 bg-slate-200/50 text-center">الرصيد التراكمي</th>
+                <th className="px-4 py-3 font-bold text-slate-500 border border-slate-200 text-center">إجراءات</th>
               </tr>
             </thead>
             <tbody>
-              {journal.length === 0 && (<tr><td colSpan={6} className="py-8 text-center text-slate-400 font-bold border border-slate-200">لا توجد عمليات مالية</td></tr>)}
-              {journal.map(j => {
+              {filteredJournal.length === 0 && (<tr><td colSpan={7} className="py-8 text-center text-slate-400 font-bold border border-slate-200">لا توجد عمليات مالية مطابقة</td></tr>)}
+              {filteredJournal.map(j => {
                 const isInc = j.type === 'Encaissement';
                 return (
                   <tr key={j.id} className="hover:bg-slate-50 transition-colors">
@@ -151,6 +203,11 @@ export function CashJournal() {
                     </td>
                     <td className="px-4 py-3 border border-slate-200 text-center bg-slate-50 font-black text-slate-800" dir="ltr">
                       {totalFormat(j.solde_cumule || 0)}
+                    </td>
+                    <td className="px-4 py-3 border border-slate-200 text-center">
+                      <button onClick={() => handleDelete(j.id)} className="text-slate-400 hover:text-rose-500 hover:bg-rose-50 p-1.5 rounded transition-colors">
+                        <Trash className="w-4 h-4" />
+                      </button>
                     </td>
                   </tr>
                 )

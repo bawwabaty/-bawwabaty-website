@@ -292,8 +292,8 @@ app.get("/api/reservations", (req, res) => {
     .map((r: any) => {
       const client = db.clients.find((c: any) => c.id == r.client_id) || {};
       const trip = db.trips.find((t: any) => t.id == r.trip_id) || {};
-      const payments = db.payments.filter((p: any) => p.reservation_id == r.id && !p.deleted);
-      const paid = payments.reduce((sum: number, p: any) => sum + (parseFloat(p.amount) || 0), 0);
+      const pms = db.cash_journal.filter((j: any) => j.type === 'Encaissement' && j.entity_type === 'Reservation' && j.entity_id == r.id);
+      const paid = pms.reduce((sum: number, p: any) => sum + (parseFloat(p.amount) || 0), 0);
       const remain = (parseFloat(r.agreed_price) || 0) - paid;
       return {
         ...r,
@@ -348,6 +348,43 @@ app.post("/api/reservations", (req, res) => {
   res.json(reservation);
 });
 
+app.delete("/api/reservations/:id", (req, res) => {
+  const db = loadDb();
+  const rIdx = db.reservations.findIndex((r: any) => r.id == req.params.id);
+  if (rIdx !== -1) {
+    db.reservations[rIdx].deleted = true;
+    logAudit(db, "DELETE", "RESERVATION", req.params.id);
+    saveDb(db);
+  }
+  res.json({ success: true });
+});
+
+app.post("/api/reservations/:id/pay", (req, res) => {
+  const db = loadDb();
+  const resv = db.reservations.find((r: any) => r.id == req.params.id);
+  if (!resv) return res.status(404).json({ error: "Reservation not found" });
+
+  const client = db.clients.find((c: any) => c.id == resv.client_id);
+  const clientName = client ? client.full_name : 'عميل';
+
+  const paymentEntry = {
+    id: getNextId(db.cash_journal),
+    date: new Date().toISOString(),
+    receipt_ref: generateRef('PAY'),
+    entity: `${clientName} - دفعة المتبقي`,
+    type: 'Encaissement',
+    amount: parseFloat(req.body.amount) || 0,
+    payment_method: 'Cash',
+    currency: 'MAD',
+    entity_type: 'Reservation',
+    entity_id: resv.id
+  };
+  
+  db.cash_journal.push(paymentEntry);
+  saveDb(db);
+  res.json(paymentEntry);
+});
+
 app.put("/api/reservations/:id/status", (req, res) => {
   const db = loadDb();
   const rIdx = db.reservations.findIndex((r: any) => r.id == req.params.id);
@@ -359,8 +396,8 @@ app.put("/api/reservations/:id/status", (req, res) => {
   
   if (newStatus === 'Annulée-Restituée' && oldStatus !== 'Annulée-Restituée') {
     // Check if client paid anything
-    const payments = db.payments.filter((p: any) => p.reservation_id == req.params.id && !p.deleted);
-    const paid = payments.reduce((sum: number, p: any) => sum + (parseFloat(p.amount) || 0), 0);
+    const pms = db.cash_journal.filter((j: any) => j.type === 'Encaissement' && j.entity_type === 'Reservation' && j.entity_id == req.params.id);
+    const paid = pms.reduce((sum: number, p: any) => sum + (parseFloat(p.amount) || 0), 0);
     
     if (paid > 0) {
       // Refund via cash journal
@@ -430,6 +467,16 @@ app.post("/api/expenses", (req, res) => {
   res.json(expense);
 });
 
+app.delete("/api/expenses/:id", (req, res) => {
+  const db = loadDb();
+  const eIdx = db.expenses.findIndex((e: any) => e.id == req.params.id);
+  if (eIdx !== -1) {
+    db.expenses[eIdx].deleted = true;
+    saveDb(db);
+  }
+  res.json({ success: true });
+});
+
 // Cash Journal
 app.post("/api/cash-journal", (req, res) => {
   const db = loadDb();
@@ -442,6 +489,16 @@ app.post("/api/cash-journal", (req, res) => {
   db.cash_journal.push(entry);
   saveDb(db);
   res.json(entry);
+});
+
+app.delete("/api/cash-journal/:id", (req, res) => {
+  const db = loadDb();
+  const index = db.cash_journal.findIndex((j: any) => j.id == req.params.id);
+  if (index !== -1) {
+    db.cash_journal.splice(index, 1);
+    saveDb(db);
+  }
+  res.json({ success: true });
 });
 
 app.get("/api/cash-journal", (req, res) => {

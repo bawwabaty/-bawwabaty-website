@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Expense, Trip } from "../../erp-types";
-import { Receipt, Plane, ArrowRight, DollarSign, Wallet, CheckSquare, Square } from "lucide-react";
+import { Receipt, Plane, ArrowRight, DollarSign, Wallet, CheckSquare, Square, Trash } from "lucide-react";
 import toast from "react-hot-toast";
 import { getApiUrl } from "../../lib/api";
 
@@ -19,6 +19,21 @@ export function Expenses() {
 
   const fetchExpenses = () => fetch(getApiUrl("/api/expenses")).then(r => r.json()).then(setExpenses).catch(console.error);
   const fetchTrips = () => fetch(getApiUrl("/api/trips")).then(r => r.json()).then(setTrips).catch(console.error);
+
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("هل أنت متأكد من حذف هذا المصروف؟")) return;
+    try {
+      const res = await fetch(getApiUrl(`/api/expenses/${id}`), { method: "DELETE" });
+      if (res.ok) {
+        toast.success("تم الحذف بنجاح");
+        fetchExpenses();
+      } else {
+        toast.error("حدث خطأ أثناء الحذف");
+      }
+    } catch {
+      toast.error("حدث خطأ أثناء الحذف");
+    }
+  };
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -148,10 +163,11 @@ export function Expenses() {
                     <th className="px-4 py-3 font-bold">البيان</th>
                     <th className="px-4 py-3 font-bold">النوع</th>
                     <th className="px-4 py-3 font-bold">المبلغ</th>
+                    <th className="px-4 py-3 font-bold rounded-l-xl">تعامل</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
-                  {expenses.length === 0 && (<tr><td colSpan={4} className="py-8 text-center text-slate-400">لا توجد مصاريف مسجلة</td></tr>)}
+                  {expenses.length === 0 && (<tr><td colSpan={5} className="py-8 text-center text-slate-400">لا توجد مصاريف مسجلة</td></tr>)}
                   {expenses.slice().reverse().map(e => (
                     <tr key={e.id} className="hover:bg-slate-50 transition-colors">
                       <td className="px-4 py-4 text-sm text-slate-500">{e.date?.split('T')[0]}</td>
@@ -164,6 +180,11 @@ export function Expenses() {
                         )}
                       </td>
                       <td className="px-4 py-4 font-black text-rose-600" dir="ltr">{totalFormat(e.amount)}</td>
+                      <td className="px-4 py-4">
+                        <button onClick={() => handleDelete(e.id)} className="text-slate-400 hover:text-rose-500 hover:bg-rose-50 p-2 rounded-lg transition-colors">
+                          <Trash className="w-5 h-5" />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
