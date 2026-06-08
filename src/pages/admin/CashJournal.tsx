@@ -4,8 +4,10 @@ import { Download, Plus, Wallet, TrendingUp, TrendingDown, ArrowDownLeft, ArrowU
 import toast from "react-hot-toast";
 import { getApiUrl } from "../../lib/api";
 import { useERPSync } from "../../hooks/useERPSync";
+import { useAuth } from "../../context/AuthContext";
 
 export function CashJournal() {
+  const { loading, isAdmin } = useAuth();
   const [journal, setJournal] = useState<CashJournalType[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form, setForm] = useState({
@@ -30,8 +32,10 @@ export function CashJournal() {
   useERPSync(fetchData);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (!loading && isAdmin) {
+      fetchData();
+    }
+  }, [loading, isAdmin, fetchData]);
 
   const handleDelete = async (id: number) => {
     if (!window.confirm("هل أنت متأكد من حذف هذه العملية؟")) return;

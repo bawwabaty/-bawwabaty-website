@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { getApiUrl } from "../../lib/api";
+import { useAuth } from "../../context/AuthContext";
 import { Plus, Edit2, Trash2, X, Save, Image as ImageIcon, PlusCircle, Trash, RefreshCw, ArrowUpRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -50,6 +51,7 @@ interface Package {
 }
 
 export function AdminPackages() {
+  const { loading: authLoading, isAdmin } = useAuth();
   const [packages, setPackages] = useState<Package[]>([]);
   const [erpTrips, setErpTrips] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,6 +90,8 @@ export function AdminPackages() {
   useERPSync(fetchErpTrips);
 
   useEffect(() => {
+    if (authLoading || !isAdmin) return;
+    
     fetchErpTrips();
     const q = query(collection(db, 'packages'), orderBy('createdAt', 'desc'));
     const unsub = onSnapshot(q, (snapshot) => {
@@ -100,7 +104,7 @@ export function AdminPackages() {
       toast.error('حدث خطأ أثناء جلب الباقات', { id: 'fetch-packages-error' });
     });
     return () => unsub();
-  }, [fetchErpTrips]);
+  }, [fetchErpTrips, authLoading, isAdmin]);
 
   const syncPackagesToERP = async () => {
     setIsSyncing(true);

@@ -5,10 +5,12 @@ import toast from "react-hot-toast";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useERPSync } from "../../hooks/useERPSync";
+import { useAuth } from "../../context/AuthContext";
 
 import { getApiUrl } from "../../lib/api";
 
 export function Reservations() {
+  const { loading, isAdmin } = useAuth();
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [trips, setTrips] = useState<Trip[]>([]);
   const [packages, setPackages] = useState<any[]>([]);
@@ -35,12 +37,14 @@ export function Reservations() {
   useERPSync(loadData);
 
   useEffect(() => {
+    if (loading || !isAdmin) return;
+
     loadData();
     const unsub = onSnapshot(collection(db, 'packages'), (snap) => {
       setPackages(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
     return () => unsub();
-  }, [loadData]);
+  }, [loading, isAdmin, loadData]);
   
   // Logic to auto-fill price based on package
   useEffect(() => {

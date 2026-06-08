@@ -4,8 +4,10 @@ import { Receipt, Plane, ArrowRight, DollarSign, Wallet, CheckSquare, Square, Tr
 import toast from "react-hot-toast";
 import { getApiUrl } from "../../lib/api";
 import { useERPSync } from "../../hooks/useERPSync";
+import { useAuth } from "../../context/AuthContext";
 
 export function Expenses() {
+  const { loading, isAdmin } = useAuth();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [trips, setTrips] = useState<Trip[]>([]);
   
@@ -24,8 +26,10 @@ export function Expenses() {
   useERPSync(loadData);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    if (!loading && isAdmin) {
+      loadData();
+    }
+  }, [loading, isAdmin, loadData]);
 
   const handleDelete = async (id: number) => {
     if (!window.confirm("هل أنت متأكد من حذف هذا المصروف؟")) return;

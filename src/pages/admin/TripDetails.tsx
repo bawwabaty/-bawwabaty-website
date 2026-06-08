@@ -7,8 +7,10 @@ import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { getApiUrl } from "../../lib/api";
 import { useERPSync } from "../../hooks/useERPSync";
+import { useAuth } from "../../context/AuthContext";
 
 export function TripDetails() {
+  const { loading, isAdmin } = useAuth();
   const { id } = useParams();
   const [trip, setTrip] = useState<Trip | null>(null);
   const [reservations, setReservations] = useState<Reservation[]>([]);
@@ -29,8 +31,10 @@ export function TripDetails() {
   useERPSync(fetchTripDetails);
 
   useEffect(() => {
-    fetchTripDetails();
-  }, [fetchTripDetails]);
+    if (!loading && isAdmin) {
+      fetchTripDetails();
+    }
+  }, [loading, isAdmin, fetchTripDetails]);
 
   if (!trip) return <div className="text-center p-12">جاري التحميل...</div>;
 

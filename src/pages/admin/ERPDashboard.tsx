@@ -4,8 +4,10 @@ import { TrendingUp, CreditCard, Receipt, Wallet, Plane } from "lucide-react";
 import { Trip } from "../../erp-types";
 import { getApiUrl } from "../../lib/api";
 import { useERPSync } from "../../hooks/useERPSync";
+import { useAuth } from "../../context/AuthContext";
 
 export function ERPDashboard() {
+  const { loading, isAdmin } = useAuth();
   const [stats, setStats] = useState({
     chiffre_d_affaires: 0,
     total_paiement: 0,
@@ -57,8 +59,10 @@ export function ERPDashboard() {
   useERPSync(fetchDashboardData);
 
   useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData]);
+    if (!loading && isAdmin) {
+      fetchDashboardData();
+    }
+  }, [loading, isAdmin, fetchDashboardData]);
 
   const formatCurrency = (val: number) => new Intl.NumberFormat('ar-MA', { style: 'currency', currency: 'MAD' }).format(val);
 

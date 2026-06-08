@@ -89,6 +89,14 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /trips/{document=**} {
+      allow read, write: if isAdmin();
+    }
+
+    match /accounting/{document=**} {
+      allow read, write: if isAdmin();
+    }
+
     match /backups/{backupId} {
       allow read, write: if true;
     }

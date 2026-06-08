@@ -7,8 +7,10 @@ import { collection, query, orderBy } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { getApiUrl } from "../../lib/api";
 import { useERPSync } from "../../hooks/useERPSync";
+import { useAuth } from "../../context/AuthContext";
 
 export function Trips() {
+  const { loading, isAdmin } = useAuth();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [autoSyncing, setAutoSyncing] = useState(true);
 
@@ -32,8 +34,10 @@ export function Trips() {
   useERPSync(loadTrips);
 
   useEffect(() => {
-    loadTrips();
-  }, [loadTrips]);
+    if (!loading && isAdmin) {
+      loadTrips();
+    }
+  }, [loading, isAdmin, loadTrips]);
 
   return (
     <div className="space-y-8">
