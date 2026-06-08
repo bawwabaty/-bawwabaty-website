@@ -13,18 +13,19 @@ export function Expenses() {
     description: '', amount: '', type: 'Fixe', trip_id: '', pay_now: false
   });
 
-  const fetchExpenses = () => fetch(getApiUrl("/api/expenses")).then(r => r.json()).then(setExpenses).catch(console.error);
-  const fetchTrips = () => fetch(getApiUrl("/api/trips")).then(r => r.json()).then(setTrips).catch(console.error);
+  const fetchExpenses = React.useCallback(() => fetch(getApiUrl("/api/expenses")).then(r => r.json()).then(setExpenses).catch(console.error), []);
+  const fetchTrips = React.useCallback(() => fetch(getApiUrl("/api/trips")).then(r => r.json()).then(setTrips).catch(console.error), []);
 
-  useERPSync(() => {
+  const loadData = React.useCallback(() => {
     fetchExpenses();
     fetchTrips();
-  });
+  }, [fetchExpenses, fetchTrips]);
+
+  useERPSync(loadData);
 
   useEffect(() => {
-    fetchExpenses();
-    fetchTrips();
-  }, []);
+    loadData();
+  }, [loadData]);
 
   const handleDelete = async (id: number) => {
     if (!window.confirm("هل أنت متأكد من حذف هذا المصروف؟")) return;

@@ -19,25 +19,28 @@ export function Reservations() {
 
   const [receiptData, setReceiptData] = useState<any>(null);
 
-  const fetchData = () => {
+  const fetchData = React.useCallback(() => {
     fetch(getApiUrl("/api/reservations")).then(r => r.json()).then(setReservations).catch(console.error);
-  };
+  }, []);
   
-  const fetchTrips = () => Object.assign([], fetch(getApiUrl("/api/trips")).then(r => r.json()).then(setTrips).catch(console.error));
+  const fetchTrips = React.useCallback(() => {
+    fetch(getApiUrl("/api/trips")).then(r => r.json()).then(setTrips).catch(console.error);
+  }, []);
 
-  useERPSync(() => {
+  const loadData = React.useCallback(() => {
     fetchData();
     fetchTrips();
-  });
+  }, [fetchData, fetchTrips]);
+
+  useERPSync(loadData);
 
   useEffect(() => {
-    fetchData();
-    fetchTrips();
+    loadData();
     const unsub = onSnapshot(collection(db, 'packages'), (snap) => {
       setPackages(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
     return () => unsub();
-  }, []);
+  }, [loadData]);
   
   // Logic to auto-fill price based on package
   useEffect(() => {

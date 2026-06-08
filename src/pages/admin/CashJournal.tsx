@@ -20,18 +20,18 @@ export function CashJournal() {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchType, setSearchType] = useState('All');
 
-  const fetchData = () => {
+  const fetchData = React.useCallback(() => {
     fetch(getApiUrl("/api/cash-journal"))
       .then(r => r.json())
       .then(setJournal)
       .catch(console.error);
-  };
+  }, []);
 
   useERPSync(fetchData);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   const handleDelete = async (id: number) => {
     if (!window.confirm("هل أنت متأكد من حذف هذه العملية؟")) return;

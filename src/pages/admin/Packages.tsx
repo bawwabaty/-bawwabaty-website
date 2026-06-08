@@ -74,7 +74,7 @@ export function AdminPackages() {
 
   const [formData, setFormData] = useState<Omit<Package, 'id'>>(defaultFormData);
 
-  const fetchErpTrips = async () => {
+  const fetchErpTrips = React.useCallback(async () => {
     try {
       const tripsRes = await fetch(getApiUrl("/api/trips"));
       if (tripsRes.ok) {
@@ -83,7 +83,7 @@ export function AdminPackages() {
     } catch(e) {
       console.error(e);
     }
-  };
+  }, []);
 
   useERPSync(fetchErpTrips);
 
@@ -97,10 +97,10 @@ export function AdminPackages() {
     }, (error) => {
       console.error(error);
       setLoading(false);
-      toast.error('حدث خطأ أثناء جلب الباقات');
+      toast.error('حدث خطأ أثناء جلب الباقات', { id: 'fetch-packages-error' });
     });
     return () => unsub();
-  }, []);
+  }, [fetchErpTrips]);
 
   const syncPackagesToERP = async () => {
     setIsSyncing(true);

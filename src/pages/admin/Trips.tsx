@@ -12,7 +12,7 @@ export function Trips() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [autoSyncing, setAutoSyncing] = useState(true);
 
-  const loadTrips = async () => {
+  const loadTrips = React.useCallback(async () => {
     setAutoSyncing(true);
     try {
       const resTrips = await fetch(getApiUrl("/api/trips"));
@@ -23,17 +23,17 @@ export function Trips() {
       setTrips(finalTrips);
     } catch (err: any) {
       console.error(err);
-      toast.error('حدث خطأ أثناء تحميل الرحلات من المحاسبة');
+      toast.error('حدث خطأ أثناء تحميل الرحلات من المحاسبة', { id: 'accounting-error' });
     } finally {
       setAutoSyncing(false);
     }
-  };
+  }, []);
 
   useERPSync(loadTrips);
 
   useEffect(() => {
     loadTrips();
-  }, []);
+  }, [loadTrips]);
 
   return (
     <div className="space-y-8">

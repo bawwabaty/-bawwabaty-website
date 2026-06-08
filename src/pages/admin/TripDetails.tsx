@@ -15,7 +15,7 @@ export function TripDetails() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [activeTab, setActiveTab] = useState<'reservations' | 'expenses' | 'rooming'>('reservations');
 
-  const fetchTripDetails = () => {
+  const fetchTripDetails = React.useCallback(() => {
     fetch(getApiUrl(`/api/trips/${id}`))
       .then(r => r.json())
       .then(data => {
@@ -24,13 +24,13 @@ export function TripDetails() {
         setExpenses(data.expenses || []);
       })
       .catch(console.error);
-  };
+  }, [id]);
 
   useERPSync(fetchTripDetails);
 
   useEffect(() => {
     fetchTripDetails();
-  }, [id]);
+  }, [fetchTripDetails]);
 
   if (!trip) return <div className="text-center p-12">جاري التحميل...</div>;
 
